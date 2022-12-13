@@ -1,0 +1,8 @@
+# You can also set the arguments below using environment variables
+# "LAP" is added to the environment variable name as a prefix.
+# You can set the database password in the environment variable "LAP_DB_PASSWORD"
+# Environment variables have higher priority than this file.
+unittest:
+  key1: val1
+  key2: val2
+
