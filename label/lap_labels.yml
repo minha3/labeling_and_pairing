@@ -1,0 +1,757 @@
+# I used labels in K-Fashion dataset.
+# The dataset link what I used (https://aihub.or.kr/aidata/7988) return 404 now(2022-12-14).
+# I think the dataset link is updated to https://aihub.or.kr/aihubdata/data/view.do?currMenu=115&topMenu=100&aihubDataSe=realm&dataSetSn=51
+custom:
+  ko: 커스텀
+  condition:
+    slacks: "o.category == 'pants' and o.fabric == 'woven' and o.fit != 'loose' and o.style in ['modern', 'sophisticated', 'classic'] and o.center_back_length in ['ankle', 'long'] and o.fit == 'wide'"
+    wide_jeans: "o.category == 'jeans' and o.fit == 'wide'"
+    cotton_pants: "o.category == 'pants' and o.fabric == 'woven' and o.fit != 'loose' and o.style in ['street', 'country', 'genderless'] and o.center_back_length in ['ankle', 'long']"
+    casual_tshirt: "o.category == 'tshirt' and o.style in ['street', 'country', 'genderless', 'tomboy'] and o.print != 'stripe'"
+    casual_knitwear: "o.category == 'knitwear' and o.style in ['street', 'country', 'genderless', 'tomboy'] and o.print != 'stripe'"
+    casual_shirt: "o.category == 'shirt' and o.style in ['street', 'country', 'genderless', 'tomboy']"
+    casual_blouse: "o.category == 'blouse' and o.style in ['street', 'country', 'genderless', 'tomboy']"
+    casual_dress: "o.category == 'dress' and o.style in ['street', 'country', 'genderless', 'tomboy']"
+    feminine_dress: "o.category == 'dress' and o.style in ['feminine', 'romantic']"
+    half_padding: "o.fabric == 'padded' and o.center_back_length == 'half'"
+    sweetshirt: "o.category == 'top' and o.fabric == 'jersey'"
+region:
+  ko: 영역
+  labels:
+    - top
+    - bottom
+    - outer
+    - dress
+style:
+  ko: 스타일
+  regions:
+    - top
+    - bottom
+    - outer
+    - dress
+  labels:
+    - street
+    - feminine
+    - resort
+    - modern
+    - country
+    - sophisticated
+    - sporty
+    - genderless
+    - mannish
+    - tomboy
+    - retro
+    - hippie
+    - sexy
+    - kitsch
+    - oriental
+    - avant-garde
+    - military
+    - preppy
+    - western
+    - hiphop
+    - punk
+    - classic
+    - romantic
+#sub_style:
+#  ko: 서브스타일
+#  regions:
+#    - top
+#    - bottom
+#    - outer
+#    - dress
+#  labels:
+#    - street
+#    - feminine
+#    - resort
+#    - modern
+#    - country
+#    - sophisticated
+#    - sporty
+#    - genderless
+#    - mannish
+#    - tomboy
+#    - retro
+#    - hippie
+#    - sexy
+#    - kitsch
+#    - oriental
+#    - avant-garde
+#    - military
+#    - preppy
+#    - western
+#    - hiphop
+#    - punk
+#    - classic
+#    - romantic
+category:
+  ko: 카테고리
+  regions:
+    - top
+    - bottom
+    - outer
+    - dress
+  labels:
+    - pants
+    - tshirt
+    - dress
+    - jeans
+    - blouse
+    - skirt
+    - knitwear
+    - top
+    - shirt
+    - jacket
+    - cardigan
+    - coat
+    - vest
+    - jumper
+    - hoodie
+    - jogger_pants
+    - down_jacket
+    - leggings
+    - jumpsuits
+    - zip_up
+    - bra_top
+fabric:
+  ko: 소재
+  regions:
+    - top
+    - bottom
+    - outer
+    - dress
+  labels:
+    - woven
+    - jersey
+    - denim
+    - knit
+    - linen
+    - chiffon
+    - wool_cashmere
+    - silk
+    - lace
+    - spandex
+    - padded
+    - fleece
+    - corduroy
+    - leather
+    - fur
+    - tweed
+    - velvet
+    - mohair_knit
+    - suede
+    - mesh
+    - shearling
+    - jacquard
+    - plastic_pvc
+    - sequin_glitter
+    - neoprene
+print:
+  ko: 프린트
+  regions:
+    - top
+    - bottom
+    - outer
+    - dress
+  labels:
+    - plain
+    - lettering
+    - stripe
+    - check
+    - graphic
+    - floral
+    - mix
+    - dot
+    - gingham
+    - leopard
+    - paisley
+    - camouflage
+    - hound_tooth
+    - zigzag
+    - argyle
+    - heart
+    - tie_dye
+    - gradation
+    - zebra
+    - python
+    - skull
+detail:
+  ko: 디테일
+  regions:
+    - top
+    - bottom
+    - outer
+    - dress
+  labels:
+    - pocket
+    - button
+    - drop_shoulder
+    - shirring
+    - slit
+    - puff
+    - string
+    - destroyed
+    - band
+    - flare
+    - ribbon
+    - rollup
+    - pleated
+    - asymmetric
+    - ruffle
+    - frill
+    - lace
+    - zipper
+    - stitch
+    - buckle
+    - embroidery
+    - single_breasted
+    - twisted_knit
+    - peplum
+    - cut_out
+    - double_breasted
+    - patchwork
+    - beads
+    - quilting
+    - fur_trimming
+    - drop_waist
+    - tassel
+    - fringe
+    - stud
+    - lace_up
+    - x_strap
+    - spangle
+    - pompom
+    - chain
+    - glitter
+color:
+  ko: 색상
+  regions:
+    - top
+    - bottom
+    - outer
+    - dress
+  labels:
+    - white
+    - black
+    - beige
+    - blue
+    - skyblue
+    - gray
+    - navy
+    - pink
+    - brown
+    - olive
+    - red
+    - silver
+    - green
+    - yellow
+    - burgundy
+    - orange
+    - lavender
+    - purple
+    - mint
+    - gold
+    - neon
+#sub_color:
+#  ko: 서브색상
+#  regions:
+#    - top
+#    - bottom
+#    - outer
+#    - dress
+#  labels:
+#    - white
+#    - black
+#    - beige
+#    - blue
+#    - skyblue
+#    - gray
+#    - navy
+#    - pink
+#    - brown
+#    - olive
+#    - red
+#    - silver
+#    - green
+#    - yellow
+#    - burgundy
+#    - orange
+#    - lavender
+#    - purple
+#    - mint
+#    - gold
+#    - neon
+center_back_length:
+  ko: 기장
+  regions:
+    - top
+    - bottom
+    - outer
+    - dress
+  labels:
+    - ankle
+    - normal
+    - long
+    - midi
+    - mini
+    - knee_length
+    - half
+    - crop
+    - maxi
+sleeve_length:
+  ko: 소매기장
+  regions:
+    - top
+    - outer
+    - dress
+  labels:
+    - long_sleeve
+    - short_sleeve
+    - three_quarter_sleeve
+    - sleeveless
+    - none
+    - cap
+neckline:
+  ko: 넥라인
+  regions:
+    - top
+    - outer
+    - dress
+  labels:
+    - round_neck
+    - v_neck
+    - turtle_neck
+    - u_neck
+    - hoodie
+    - collarless
+    - square_neck
+    - boat_neck
+    - off_shoulder
+    - sweet_heart
+    - halter_neck
+    - one_shoulder
+fit:
+  ko: 핏
+  regions:
+    - top
+    - bottom
+    - outer
+    - dress
+  labels:
+    - normal
+    - loose
+    - wide
+    - skinny
+    - tight
+    - oversize
+    - bell_bottom
+collar:
+  ko: 옷깃
+  regions:
+    - top
+    - outer
+    - dress
+  labels:
+    - convertable_collar
+    - tailored_collar
+    - band_collar
+    - mandarin_collar
+    - bow_collar
+    - peter_pan_collar
+    - polo_collar
+    - sailor_collar
+    - shawl_collar
+top:
+  ko:
+   - 상의
+   - 탑
+outer:
+  ko: 아우터
+dress:
+  ko:
+   - 원피스
+   - 드레스
+bottom:
+  ko: 하의
+street:
+  ko: 스트리트
+feminine:
+  ko: 페미닌
+resort:
+  ko: 리조트
+modern:
+  ko: 모던
+country:
+  ko: 컨트리
+sophisticated:
+  ko: 소피스트케이티드
+sporty:
+  ko: 스포티
+genderless:
+  ko: 젠더리스
+mannish:
+  ko: 매니시
+tomboy:
+  ko: 톰보이
+retro:
+  ko: 레트로
+hippie:
+  ko: 히피
+sexy:
+  ko: 섹시
+kitsch:
+  ko: 키치
+oriental:
+  ko: 오리엔탈
+avant-garde:
+  ko: 아방가르드
+military:
+  ko: 밀리터리
+preppy:
+  ko: 프레피
+western:
+  ko: 웨스턴
+hiphop:
+  ko: 힙합
+punk:
+  ko: 펑크
+classic:
+  ko: 클래식
+romantic:
+  ko: 로맨틱
+pants:
+  ko: 팬츠
+tshirt:
+  ko: 티셔츠
+jeans:
+  ko: 청바지
+blouse:
+  ko: 블라우스
+skirt:
+  ko: 스커트
+knitwear:
+  ko: 니트웨어
+shirt:
+  ko: 셔츠
+jacket:
+  ko: 재킷
+cardigan:
+  ko: 가디건
+coat:
+  ko: 코트
+vest:
+  ko: 베스트
+jumper:
+  ko: 점퍼
+hoodie:
+  ko:
+   - 후드티
+   - 후드
+jogger_pants:
+  ko: 조거팬츠
+down_jacket:
+  ko: 패딩
+leggings:
+  ko: 래깅스
+jumpsuits:
+  ko: 점프수트
+zip_up:
+  ko: 짚업
+bra_top:
+  ko: 브라탑
+woven:
+  ko: 우븐
+jersey:
+  ko: 저지
+denim:
+  ko: 데님
+knit:
+  ko: 니트
+linen:
+  ko: 린넨
+chiffon:
+  ko: 시폰
+wool_cashmere:
+  ko: 울/캐시미어
+silk:
+  ko: 실크
+lace:
+  ko: 레이스
+spandex:
+  ko: 스판덱스
+padded:
+  ko: 패딩
+fleece:
+  ko: 플리스
+corduroy:
+  ko: 코듀로이
+leather:
+  ko: 가죽
+fur:
+  ko: 퍼
+tweed:
+  ko: 트위드
+velvet:
+  ko: 벨벳
+mohair_knit:
+  ko: 헤어 니트
+suede:
+  ko: 스웨이드
+mesh:
+  ko: 메시
+shearling:
+  ko: 무스탕
+jacquard:
+  ko: 자카드
+plastic_pvc:
+  ko: 비닐/pvc
+sequin_glitter:
+  ko: 시퀸/글리터
+neoprene:
+  ko: 네오프렌
+plain:
+  ko: 무지
+lettering:
+  ko: 레터링
+stripe:
+  ko: 스트라이프
+check:
+  ko: 체크
+graphic:
+  ko: 그래픽
+floral:
+  ko: 플로럴
+mix:
+  ko: 믹스
+dot:
+  ko: 도트
+gingham:
+  ko: 깅엄
+leopard:
+  ko: 호피
+paisley:
+  ko: 페이즐리
+camouflage:
+  ko: 카무플라쥬
+hound_tooth:
+  ko: 하운드 투스
+zigzag:
+  ko: 지그재그
+argyle:
+  ko: 아가일
+heart:
+  ko: 하트
+tie_dye:
+  ko: 타이다이
+gradation:
+  ko: 그라데이션
+zebra:
+  ko: 지브라
+python:
+  ko: 뱀피
+skull:
+  ko: 해골
+pocket:
+  ko: 포켓
+button:
+  ko: 단추
+drop_shoulder:
+  ko: 드롭숄더
+shirring:
+  ko: 셔링
+slit:
+  ko: 슬릿
+puff:
+  ko: 퍼프
+string:
+  ko: 스트링
+destroyed:
+  ko: 디스트로이드
+band:
+  ko: 띠
+flare:
+  ko: 플레어
+ribbon:
+  ko: 리본
+rollup:
+  ko: 롤업
+pleated:
+  ko: 플리츠
+asymmetric:
+  ko: 비대칭
+ruffle:
+  ko: 러플
+frill:
+  ko: 프릴
+zipper:
+  ko: 지퍼
+stitch:
+  ko: 스티치
+buckle:
+  ko: 버클
+embroidery:
+  ko: 자수
+single_breasted:
+  ko: 싱글브레스티드
+twisted_knit:
+  ko: 니트꽈베기
+peplum:
+  ko: 페플럼
+cut_out:
+  ko: 컷아웃
+double_breasted:
+  ko: 더블브레스티드
+patchwork:
+  ko: 패치워크
+beads:
+  ko: 비즈
+quilting:
+  ko: 퀄팅
+fur_trimming:
+  ko: 퍼트리밍
+drop_waist:
+  ko: 드롭웨이스트
+tassel:
+  ko: 태슬
+fringe:
+  ko: 프린지
+stud:
+  ko: 스터드
+lace_up:
+  ko: 레이스업
+x_strap:
+  ko: X스트랩
+spangle:
+  ko: 스팽글
+pompom:
+  ko: 폼폼
+chain:
+  ko: 체인
+glitter:
+  ko: 글리터
+white:
+  ko: 화이트
+black:
+  ko: 블랙
+beige:
+  ko: 베이지
+blue:
+  ko: 블루
+skyblue:
+  ko: 스카이블루
+gray:
+  ko: 그레이
+navy:
+  ko: 네이비
+pink:
+  ko: 핑크
+brown:
+  ko: 브라운
+olive:
+  ko: 카키
+red:
+  ko: 레드
+silver:
+  ko: 실버
+green:
+  ko: 그린
+yellow:
+  ko: 옐로우
+burgundy:
+  ko: 와인
+orange:
+  ko: 오렌지
+lavender:
+  ko: 라벤더
+purple:
+  ko: 퍼플
+mint:
+  ko: 민트
+gold:
+  ko: 골드
+neon:
+  ko: 네온
+ankle:
+  ko: 발목
+normal:
+  ko:
+    - 노말
+    - 노멀
+long:
+  ko: 롱
+midi:
+  ko: 미디
+mini:
+  ko: 미니
+knee_length:
+  ko: 니렝스
+half:
+  ko: 하프
+crop:
+  ko: 크롭
+maxi:
+  ko: 맥시
+long_sleeve:
+  ko: 긴팔
+short_sleeve:
+  ko: 반팔
+three_quarter_sleeve:
+  ko: 7부소매
+sleeveless:
+  ko: 민소매
+none:
+  ko: 없음
+cap:
+  ko: 캡
+round_neck:
+  ko: 라운드넥
+v_neck:
+  ko: 브이넥
+turtle_neck:
+  ko: 터틀넥
+u_neck:
+  ko: 유넥
+collarless:
+  ko: 노카라
+square_neck:
+  ko: 스퀘어넥
+boat_neck:
+  ko: 보트넥
+off_shoulder:
+  ko: 오프숄더
+sweet_heart:
+  ko: 스위트하트
+halter_neck:
+  ko: 홀터넥
+one_shoulder:
+  ko: 원숄더
+loose:
+  ko: 루즈
+wide:
+  ko: 와이드
+skinny:
+  ko: 스키니
+tight:
+  ko: 타이트
+oversize:
+  ko: 오버사이즈
+bell_bottom:
+  ko: 벨보텀
+convertable_collar:
+  ko: 셔츠칼라
+tailored_collar:
+  ko: 테일러드칼라
+band_collar:
+  ko: 밴드칼라
+mandarin_collar:
+  ko: 차이나칼라
+bow_collar:
+  ko: 보우칼라
+peter_pan_collar:
+  ko: 피터팬칼라
+polo_collar:
+  ko: 폴로칼라
+sailor_collar:
+  ko: 세일러칼라
+shawl_collar:
+  ko: 숄칼라
