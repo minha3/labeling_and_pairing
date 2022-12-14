@@ -3,3 +3,7 @@ sqlalchemy
 pydantic
 aiomysql
 greenlet
+aiohttp
+aiofiles
+Pillow
+aiocsv
