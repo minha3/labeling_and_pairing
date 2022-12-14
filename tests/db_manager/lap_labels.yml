@@ -1,0 +1,73 @@
+# I used labels in K-Fashion dataset.
+# The dataset link what I used (https://aihub.or.kr/aidata/7988) return 404 now(2022-12-14).
+# I think the dataset link is updated to https://aihub.or.kr/aihubdata/data/view.do?currMenu=115&topMenu=100&aihubDataSe=realm&dataSetSn=51
+custom:
+  ko: 커스텀
+  condition:
+    sweetshirt: "o.category == 'top' and o.fabric == 'jersey'"
+region:
+  ko: 영역
+  labels:
+    - top
+    - bottom
+    - outer
+    - dress
+category:
+  ko: 카테고리
+  regions:
+    - top
+    - bottom
+    - outer
+    - dress
+  labels:
+    - pants
+    - dress
+    - skirt
+    - top
+    - down_jacket
+sleeve_length:
+  ko: 소매기장
+  regions:
+    - top
+    - outer
+    - dress
+  labels:
+    - long_sleeve
+    - short_sleeve
+fabric:
+  ko: 소재
+  regions:
+    - top
+    - bottom
+    - outer
+    - dress
+  labels:
+    - padded
+    - jersey
+
+top:
+  ko:
+   - 상의
+   - 탑
+outer:
+  ko: 아우터
+dress:
+  ko:
+   - 원피스
+   - 드레스
+bottom:
+  ko: 하의
+pants:
+  ko: 팬츠
+skirt:
+  ko: 스커트
+down_jacket:
+  ko: 패딩
+long_sleeve:
+  ko: 긴팔
+short_sleeve:
+  ko: 반팔
+padded:
+  ko: 패딩
+jersey:
+  ko: 저지

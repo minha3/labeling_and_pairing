@@ -1,0 +1,29 @@
+file1:
+  name: test_file1.csv
+  size: 10
+file2:
+  name: test_file2.csv
+  size: 10
+image1:
+  hash: 6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32
+  width: 600
+  height: 600
+  url: test_url1
+region1:
+  rx1: 0.208333
+  ry1: 0.24
+  rx2: 0.796667
+  ry2: 0.898333
+  labels:
+    region: top
+    category: top
+    fabric: padded
+region2:
+  rx1: 0.208333
+  ry1: 0.24
+  rx2: 0.796667
+  ry2: 0.898333
+  labels:
+    region: top
+    category: top
+    sleeve_length: long_sleeve

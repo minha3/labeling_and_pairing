@@ -1,3 +1,13 @@
 # You can also set the arguments below using environment variables
 # "LAP" is added to the environment variable name as a prefix.
 # Environment variables have higher priority than this file.
+db:
+  dialect: mysql
+  driver: aiomysql
+  user: root
+  password:
+  host: localhost
+  dbname: dbname
+path:
+# to load predefined label data
+  label: /path/to/label/directory
