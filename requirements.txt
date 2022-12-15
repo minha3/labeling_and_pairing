@@ -8,3 +8,6 @@ aiohttp
 aiofiles
 Pillow
 aiocsv
+fastapi
+uvicorn
+python-multipart
