@@ -1,7 +1,8 @@
 pyyaml
-sqlalchemy
+sqlalchemy==1.4.45
 pydantic
-aiomysql
+aiomysql==0.1.1
+aiosqlite==0.17.0
 greenlet
 aiohttp
 aiofiles
