@@ -1,9 +1,0 @@
-db:
-  dialect: mysql
-  driver: aiomysql
-  user: root
-  password:
-  host: localhost
-  dbname:
-path:
-  label:

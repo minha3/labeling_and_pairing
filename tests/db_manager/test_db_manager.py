@@ -22,7 +22,12 @@ class TestDBManager(unittest.IsolatedAsyncioTestCase):
         self.REGION_BASE2 = self.db_data['region2']
 
         load_labels(my_dir)
-        self.db_manager = DBManager(config_dir=my_dir)
+        self.db_manager = DBManager(db_config={'dialect': 'mysql',
+                                               'driver': 'aiomysql',
+                                               'user': 'root',
+                                               'password': os.environ['LAP_DB_PASSWORD'],
+                                               'host': 'localhost',
+                                               'dbname': os.environ['LAP_DB_DBNAME']})
         await self.db_manager.create_all(drop=True)
 
     async def asyncTearDown(self) -> None:

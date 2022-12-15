@@ -11,9 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 
 class DBManager:
-    def __init__(self, config_dir: str = None):
-        config = load_config(dirname=config_dir, read_envs=True)['db']
-        self.engine = create_async_engine("{dialect}+{driver}://{user}:{password}@{host}/{dbname}".format(**config),
+    def __init__(self, db_config: dict = None):
+        if db_config is None:
+            db_config = load_config(read_envs=True)['db']
+
+        self.engine = create_async_engine("{dialect}+{driver}://{user}:{password}@{host}/{dbname}".format(**db_config),
                                           encoding='utf-8', echo=False, future=True)
         self.async_session = sessionmaker(bind=self.engine, expire_on_commit=False, class_=AsyncSession)
 
