@@ -14,7 +14,7 @@ class TestFileManager(unittest.IsolatedAsyncioTestCase):
         self.my_dir = os.path.dirname(os.path.realpath(__file__))
         self.data_dir = os.path.join(self.my_dir,
                                      ''.join(choice(ascii_lowercase) for _ in range(8)))
-        self.file_manager = FileManager(dir_name=self.data_dir)
+        self.file_manager = FileManager(data_dir=self.data_dir)
         # Set a valid image url to test some test cases
         self.valid_image_url = ''
 

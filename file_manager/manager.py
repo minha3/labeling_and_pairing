@@ -19,15 +19,15 @@ from common.exceptions import *
 
 
 class FileManager:
-    def __init__(self, dir_name=None):
-        if dir_name is None:
-            dir_name = load_config(read_envs=True)['path']['data']
-        if dir_name is None:
+    def __init__(self, data_dir=None):
+        if data_dir is None:
+            data_dir = load_config(read_envs=True)['path']['data']
+        if data_dir is None:
             raise ParameterError('No data storage path is set. '
                                  'Set the value of the key "path.data" in configuration file. '
                                  'Alternatively, set the value of environment variable "LAP_PATH_DATA"')
-        self.image_dir = os.path.join(dir_name, 'images')
-        self.file_dir = os.path.join(dir_name, 'files')
+        self.image_dir = os.path.join(data_dir, 'images')
+        self.file_dir = os.path.join(data_dir, 'files')
         self.csv_fields = ['url']
 
     def create_all(self, drop=False):
