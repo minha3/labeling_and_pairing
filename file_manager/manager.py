@@ -95,7 +95,7 @@ class FileManager:
 
                 pil_image = PIL.Image.open(io.BytesIO(image_data))
                 return True, ImageCreate(hash=image_hash, width=pil_image.width, height=pil_image.height,
-                                         url=image_url, path=image_file)
+                                         url=image_url)
             except Exception as e:
                 return False, str(e)
 

@@ -9,7 +9,6 @@ class ImageBase(BaseModel):
     width: int
     height: int
     url: str
-    path: Optional[str]
 
 
 class ImageCreate(ImageBase):
@@ -18,6 +17,7 @@ class ImageCreate(ImageBase):
 
 class Image(ImageBase):
     id: int
+    file_id: int
 
     class Config:
         orm_mode = True

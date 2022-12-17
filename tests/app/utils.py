@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
 from db.models import *
+from common import schemas
 
 with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lap_config.yml'), 'r') as f:
     test_config = yaml.load(f, Loader=yaml.SafeLoader)
@@ -50,7 +51,7 @@ async def insert_testset():
                     session.add(db_region)
                     db_regions.append(db_region)
             await session.commit()
-            result.append({'file': obj_to_dict(db_file),
-                           'images': [obj_to_dict(o) for o in db_images],
-                           'regions': [obj_to_dict(o) for o in db_regions]})
+            result.append({'file': schemas.File.from_orm(db_file),
+                           'images': [schemas.Image.from_orm(o) for o in db_images],
+                           'regions': [schemas.Region.from_orm(o.label_to_dict()) for o in db_regions]})
     return result

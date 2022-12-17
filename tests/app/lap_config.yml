@@ -17,3 +17,7 @@ path:
 # to store the files(csv files containing list of image urls)
 # and images(image files downloaded from image urls included in csv files)
   data:
+
+# Enable inference server
+inference:
+  enabled: false

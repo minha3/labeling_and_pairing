@@ -13,6 +13,7 @@ from config import load_config
 from label import load_labels
 from file_manager import FileManager
 from db import DBManager
+from inference import InferenceClient
 from common import schemas
 from common.exceptions import *
 from app.verifiers import *
@@ -21,6 +22,7 @@ from app.exception_handler import exception_handler
 CONFIG = load_config(dirname=os.environ.get('LAP_PATH_CONFIG'), read_envs=True)
 db_manager = DBManager(db_config=CONFIG['db'])
 file_manager = FileManager(data_dir=CONFIG['path']['data'])
+inference_client = InferenceClient(config=CONFIG['inference'])
 
 app = FastAPI()
 app.add_middleware(
@@ -121,7 +123,37 @@ async def download_images(file: schemas.File):
                              f'of file "{file.name}". reason: {e}')
             return
 
-        if not images or not db_images:
+        if not db_images:
+            return
+
+        asyncio.create_task(infer_images(file))
+
+
+async def infer_images(file: schemas.File):
+    async for session in db_manager.get_session():
+        if not inference_client.enabled():
+            file.cnt_region = -1
+            file.error = 'Inference client is disabled'
+        elif await inference_client.ping():
+            db_images = await db_manager.get_images(session, file.id)
+            inference_images = []
+            for db_image in db_images:
+                image_ = schemas.Image.from_orm(db_image)
+                db_image_path = file_manager.get_image_file_path(image_.hash)
+                inference_images.append((image_, db_image_path))
+
+            regions = await inference_client.infer(inference_images)
+            db_regions = await db_manager.insert_regions(session=session, regions=regions)
+            file.cnt_region = len(db_regions)
+        else:
+            file.cnt_region = -1
+            file.error = 'Failed to check the health of inference server'
+
+        try:
+            await db_manager.update_file(session, file)
+        except ParameterError as e:
+            logging.critical(f'Failed to update value {file.cnt_region} '
+                             f'to cnt_region column of file "{file.name}". reason: {e}')
             return
 
 

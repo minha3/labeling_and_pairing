@@ -22,3 +22,10 @@ path:
 http:
   host: localhost
   port:
+
+# Enable inference server
+inference:
+  enabled: false
+  host:
+  port:
+  batch_size: 1

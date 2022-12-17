@@ -11,5 +11,6 @@ aiocsv
 fastapi
 uvicorn
 python-multipart
+httpx
 grpcio
 grpcio-tools
