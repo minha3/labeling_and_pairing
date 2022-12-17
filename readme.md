@@ -11,7 +11,7 @@ The idea of this project is to help review, modify, retrain the labels suggested
 
 <img src="./images/sample1.png">
 
-Processes
+## Processes
 
 - User upload csv files containing image urls.
 - API server downloads and saves images and sends it to inference server.
@@ -62,6 +62,7 @@ $ PYTHONPATH=. python app/run.py
 ```shell
 $ cd web
 $ npm install
+$ npm run build
 $ npm start
 ```
 
