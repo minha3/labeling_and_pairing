@@ -9,6 +9,8 @@ The purpose of this project is practicing some third-party libraries.
 
 The idea of this project is to help review, modify, retrain the labels suggested by a machine learning model.
 
+Labels and images are taken from [K-Fashion dataset](https://aihub.or.kr/aihubdata/data/view.do?currMenu=115&topMenu=100&aihubDataSe=realm&dataSetSn=51).
+
 <img src="./images/sample1.png">
 
 ## Processes
