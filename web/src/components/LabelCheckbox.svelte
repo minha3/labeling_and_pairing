@@ -85,7 +85,7 @@
 </script>
 
 {#if labels && labelCount && filterConditions}
-  <div class="row">
+  <div class="row mt-3 mb-3">
     <div class="col">
       <button class="btn btn-outline-info" on:click={() => {clearChecked()}}>전체 해제</button>
     </div>
@@ -97,13 +97,15 @@
   {#key regions}
     {#each Object.entries(labels) as [key, values]}
       <h5>{key}</h5>
-      <div class="row">
+      <div class="row ml-1">
+        <div class="col">
         {#each values as _value}
           <label>
             <input type=checkbox value={_value} bind:group={filterConditions[key]} on:change={() => {getTarget('check')}}/>
             {_value}({labelCount[key][_value] ? labelCount[key][_value] : 0})
           </label>
         {/each}
+        </div>
       </div>
     {/each}
   {/key}

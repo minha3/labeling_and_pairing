@@ -88,15 +88,15 @@
   }
 
 </script>
-<div class="d-flex justify-content-center mt-1">
+<div class="d-flex justify-content-center mt-3 mb-3">
   <button class="btn btn-outline-info mr-1" disabled={start === 0} on:click={prev}>이전</button>
   <button class="btn btn-outline-info ml-1" disabled={end === regions.length} on:click={next}>다음</button>
   {#if selectCallback}
     {#if page === 'label'}
       <button class="btn btn-outline-primary ml-1" data-toggle="modal" data-target="#RegionList" on:click={showCheckedRegions}>선택 보기</button>
       <RegionListModal regions={checkedRegions} deleteCallback={uncheckRegion} id="RegionList"/>
+      <button class="btn btn-outline-danger ml-1" on:click={onSelect}>선택 삭제</button>
     {/if}
-    <button class="btn btn-success ml-1" on:click={onSelect}>선택 {page === 'pair' ? '코디' : page === 'label' ? '삭제' : ''}</button>
   {/if}
 </div>
 {#each [...Array(nRow).keys()] as r}
