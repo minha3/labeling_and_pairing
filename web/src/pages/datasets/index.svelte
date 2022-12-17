@@ -1,4 +1,5 @@
 <script>
+  import { url } from '@sveltech/routify';
   import Server from "../../utils/server";
   const server = new Server()
   let fileInput;
@@ -101,6 +102,7 @@
       <th scope="col">크기</th>
       <th scope="col">이미지 수</th>
       <th scope="col">영역 수</th>
+      <th scope="col">라벨 태깅</th>
       <th scope="col">삭제</th>
       <th scope="col">오류</th>
     </tr>
@@ -114,6 +116,7 @@
         <td>{filestat.size}</td>
         <td>{filestat.readable_cnt_image}</td>
         <td>{filestat.readable_cnt_region}</td>
+        <td><a href="{$url(`/labeling/${filestat.id}`)}" hidden={filestat.canDelete}>시작</a></td>
         <td><button class="btn btn-outline-danger" on:click={deleteFile(filestat)} disabled={!filestat.canDelete}>삭제</button></td>
         <td>{filestat.readable_error}</td>
       </tr>

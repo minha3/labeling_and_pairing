@@ -66,6 +66,28 @@ class Server extends API {
     delete_file(fileId) {
         return this.DELETE(`${this.apibase}/files/${fileId}`)
     }
+
+    get_images(fileId) {
+        return this.GET(`${this.apibase}/images?file_id=${fileId}`)
+    }
+
+    get_image(imageId) {
+        return this.GET(`${this.apibase}/images/${imageId}`)
+    }
+
+    get_image_url(imageId) {
+        return`${this.apibase}/images/${imageId}`
+    }
+
+    get_regions_from_file(fileId) {
+        return this.GET(`${this.apibase}/regions?file_id=${fileId}`)
+    }
+
+    update_region(regionId, data) {
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json');
+        return this.PUT(`${this.apibase}/regions/${regionId}`, JSON.stringify(data), headers)
+    }
 }
 
 export default Server
