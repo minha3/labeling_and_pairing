@@ -54,8 +54,9 @@ def test_insert_file():
 
 # In production, image files are automatically saved in a data directory and image data is automatically stored in a database after inserting a file.
 # So you need to prepare files, images and regions data to be stored in the database in advance in db_data.yml
-# And you need to download image files from image urls in db_data.yml and save them in "pre_downloaded_images" directory
-# If the hash of image file is "6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32", the path of image file should be "pre_downloaded_images/6d/6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32"
+# And you need to download image files from image urls in db_data.yml and save them in "../pre_downloaded_images" directory
+# If the hash of image file is "6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32",
+# the path of image file should be "../pre_downloaded_images/6d/6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32"
 # Test cases below runs after inserting temporary data into database and copying image files to image directory
 def test_image():
     with TestClient(app) as client:

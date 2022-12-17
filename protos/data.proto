@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+message Image {
+    uint64 id = 1;
+    uint32 width = 2;
+    uint32 height = 3;
+    bytes data = 4;
+}
+
+message Bbox {
+    float rx1 = 1;
+    float ry1 = 2;
+    float rx2 = 3;
+    float ry2 = 4;
+}
+
+message Label {
+    string type = 1;
+    string name = 2;
+    float score = 3;
+}
+
+message Region {
+    Image image = 1;
+    Bbox bbox = 2;
+    repeated Label labels = 3;
+}

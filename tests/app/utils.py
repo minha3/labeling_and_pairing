@@ -20,7 +20,7 @@ def obj_to_dict(obj):
 
 async def insert_testset():
     my_dir = os.path.dirname(os.path.realpath(__file__))
-    shutil.copytree(os.path.join(my_dir, 'pre_downloaded_images'), os.path.join(my_dir, 'images'), dirs_exist_ok=True)
+    shutil.copytree(os.path.join(my_dir, '../pre_downloaded_images'), os.path.join(my_dir, 'images'), dirs_exist_ok=True)
     async with DB_SESSION() as session:
         with open(os.path.join(my_dir, 'db_data.yml'), 'r') as f:
             test_data = yaml.load(f, Loader=yaml.SafeLoader)

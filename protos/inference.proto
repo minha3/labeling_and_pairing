@@ -1,0 +1,16 @@
+syntax = "proto3";
+package inference;
+
+import "data.proto";
+
+service Inference {
+    rpc compute (Request) returns (Reply) {}
+}
+
+message Request {
+    repeated Image images = 1;
+}
+
+message Reply {
+    repeated Region regions = 1;
+}
