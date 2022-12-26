@@ -173,8 +173,11 @@ async def get_image(image_id: int, session=Depends(db_manager.get_session)):
 
 @app.get('/regions', response_model=List[schemas.Region])
 @exception_handler
-async def get_regions(image_id: Optional[int] = None, file_id: Optional[int] = None, session=Depends(db_manager.get_session)):
-    return await db_manager.get_regions(session, image_id=image_id, file_id=file_id)
+async def get_regions(image_id: Optional[int] = None, file_id: Optional[int] = None,
+                      use: Optional[bool] = None, reviewed: Optional[bool] = None,
+                      session=Depends(db_manager.get_session)):
+    return await db_manager.get_regions(session, image_id=image_id, file_id=file_id,
+                                        use=use, reviewed=reviewed)
 
 
 @app.put('/regions/{region_id}', response_model=schemas.Region)

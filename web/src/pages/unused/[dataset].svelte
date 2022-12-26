@@ -12,7 +12,7 @@
   let cursorGrid = {'start': 0};
 
   async function getRegions() {
-    allRegions = await server.get_regions_from_file(dataset, {'use': true, 'reviewed': false});
+    allRegions = await server.get_regions_from_file(dataset, {'use': false});
   }
 
   function getTargetRegions(event, target) {
@@ -23,21 +23,9 @@
     filteredRegions = target;
   }
 
-  async function deleteRegions(selectedIndexes) {
-    const promises = [];
-    for (const i of selectedIndexes) {
-      filteredRegions[i].use = false;
-      promises.push(server.update_region(filteredRegions[i].id, filteredRegions[i]));
-    }
-    await Promise.all(promises)
-    await getRegions();
-  }
-
   onMount(() => {
     getRegions();
   })
-
-
 </script>
 <div class="container-fluid">
   <div class="row">
@@ -45,9 +33,8 @@
         <LabelCheckbox regions={allRegions} callback={getTargetRegions}/>
     </div>
     <div class="col-9">
-        <RegionGrid regions={filteredRegions} editCallback={getRegions}
-                    labelEditable={true} reviewedEditable={true} useEditable={true}
-                    page="label" cursor={cursorGrid} />
+        <RegionGrid regions={filteredRegions} cursor={cursorGrid} editCallback={getRegions}
+                    useEditable={true}/>
     </div>
   </div>
 </div>

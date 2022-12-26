@@ -79,8 +79,8 @@ class Server extends API {
         return`${this.apibase}/images/${imageId}`
     }
 
-    get_regions_from_file(fileId) {
-        return this.GET(`${this.apibase}/regions?file_id=${fileId}`)
+    get_regions_from_file(fileId, params) {
+        return this.GET(`${this.apibase}/regions?file_id=${fileId}${this.join_param(params)}`)
     }
 
     update_region(regionId, data) {

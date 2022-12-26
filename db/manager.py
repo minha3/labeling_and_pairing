@@ -101,7 +101,7 @@ class DBManager:
         return r
 
     @staticmethod
-    async def insert_regions(session: AsyncSession, regions: List[schemas.RegionCreate]):
+    async def insert_regions(session: AsyncSession, regions: List[schemas.RegionCreate]) -> List[schemas.Region]:
         result = []
         for region in regions:
             db_image = await DBManager.get_image(session, region.image_id, silent=True)
@@ -123,18 +123,24 @@ class DBManager:
         return [o.label_to_dict() for o in result]
 
     @staticmethod
-    async def get_regions(session: AsyncSession, image_id: int = None, file_id: int = None):
+    async def get_regions(session: AsyncSession, image_id: int = None, file_id: int = None, **kwargs) -> \
+            List[schemas.Region]:
+        stmt = select(Region)
         if image_id:
-            query = await session.execute(select(Region).where(Region.use == true()).where(Region.image_id == image_id))
+            stmt = stmt.where(Region.image_id == image_id)
         elif file_id:
-            query = await session.execute(select(Region).where(Region.use == true()).where(Image.file_id == file_id).join(Image))
-        else:
-            query = await session.execute(select(Region))
+            stmt = stmt.where(Image.file_id == file_id).join(Image)
+
+        for k, v in kwargs.items():
+            if v is not None and hasattr(Region, k):
+                stmt = stmt.where(getattr(Region, k) == v)
+
+        query = await session.execute(statement=stmt)
 
         return [o.label_to_dict() for o in query.scalars()]
 
     @staticmethod
-    async def get_region(session: AsyncSession, region_id: int, silent=False):
+    async def get_region(session: AsyncSession, region_id: int, silent=False) -> schemas.Region:
         r = await session.get(Region, region_id)
         if r is None and not silent:
             raise ParameterNotFoundError(f'Region {region_id}')

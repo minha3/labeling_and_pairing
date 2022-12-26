@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Table, Column, Integer, String, ForeignKey, Text, DateTime, REAL, BOOLEAN, true
+from sqlalchemy import Table, Column, Integer, String, ForeignKey, Text, DateTime, REAL, BOOLEAN, true, false
 from sqlalchemy.orm import registry
 
 
@@ -52,7 +52,8 @@ region_table = Table('region', metadata,
                      Column('fit', String(128), nullable=True, comment='label type'),
                      Column('collar', String(128), nullable=True, comment='label type'),
                      Column('use', BOOLEAN, nullable=False, default=True, server_default=true(), comment='Whether the region is used for labeling'),
-                     Column('updated_at', DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+                     Column('updated_at', DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow),
+                     Column('reviewed', BOOLEAN, nullable=False, default=False, server_default=false(), comment='Whether review is done'),
                      )
 
 # Label columns should be equal to the labels of label type "region" defined in the lap_labels.yml file

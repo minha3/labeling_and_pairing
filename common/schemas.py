@@ -62,6 +62,7 @@ class RegionCreate(RegionBase):
 class Region(RegionBase):
     id: int
     use: bool
+    reviewed: bool
 
     class Config:
         orm_mode = True

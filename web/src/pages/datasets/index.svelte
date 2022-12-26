@@ -116,7 +116,10 @@
         <td>{filestat.size}</td>
         <td>{filestat.readable_cnt_image}</td>
         <td>{filestat.readable_cnt_region}</td>
-        <td><a href="{$url(`/labeling/${filestat.id}`)}" hidden={filestat.canDelete}>시작</a></td>
+        <td><a href="{$url(`/labeling/${filestat.id}`)}" hidden={filestat.canDelete}>시작</a>,
+          <a href="{$url(`/labeled/${filestat.id}`)}" hidden={filestat.canDelete}>보기</a>,
+          <a href="{$url(`/unused/${filestat.id}`)}" hidden={filestat.canDelete}>휴지통</a>
+        </td>
         <td><button class="btn btn-outline-danger" on:click={deleteFile(filestat)}>삭제</button></td>
         <td>{filestat.readable_error}</td>
       </tr>

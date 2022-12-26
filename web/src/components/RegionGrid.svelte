@@ -8,9 +8,10 @@
   export let sourceRegion = undefined;
   export let regions = [];
   export let editCallback = undefined;
-  export let deleteCallback = undefined;
   export let selectCallback = undefined;
-  export let showLabels = true;
+  export let labelEditable = false;
+  export let useEditable = false;
+  export let reviewedEditable = false;
   export let cursor = {'start': 0};
   let start = 0;
   let end;
@@ -66,16 +67,6 @@
     }
   }
 
-  function onEdit() {
-    if (typeof editCallback == 'function')
-      editCallback();
-  }
-
-  function onDelete() {
-    if (typeof deleteCallback == 'function')
-      deleteCallback();
-  }
-
   function onSelect() {
     let selectedIndexes = [];
     for (const [key, value] of Object.entries(checkState)) {
@@ -100,16 +91,15 @@
   {/if}
 </div>
 {#each [...Array(nRow).keys()] as r}
-  <div class="row">
+  <div class="row mt-2">
     {#each [...Array(nCol).keys()] as c}
       <div class="col">
         {#if start + nCol * r + c < end}
           {#if selectCallback}
             <input type=checkbox checked={checkState[start + nCol*r + c]} value={start + nCol*r + c} on:change={ e => {checkRegion(e)}}/>
           {/if}
-          <RegionCanvas region={regions[start + nCol*r + c]}
-                        editCallback={editCallback !== undefined? onEdit: undefined}
-                        deleteCallback={deleteCallback !== undefined? onDelete: undefined} showLabels={showLabels}/>
+          <RegionCanvas region={regions[start + nCol*r + c]} editCallback={editCallback}
+                        labelEditable={labelEditable} reviewedEditable={reviewedEditable} useEditable={useEditable}/>
         {/if}
       </div>
     {/each}
