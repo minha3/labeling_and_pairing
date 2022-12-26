@@ -137,7 +137,12 @@ def test_update_region_as_unused():
         region = response.json()
         assert region['use'] is False
 
-        response = client.get('/regions', params={'file_id': testset['file'].id})
+        response = client.get('/regions', params={'file_id': testset['file'].id, 'use': False})
+        assert response.status_code == 200
+        regions = response.json()
+        assert len(regions) == 1
+
+        response = client.get('/regions', params={'file_id': testset['file'].id, 'use': True})
         assert response.status_code == 200
         regions = response.json()
         assert len(regions) == len(testset['regions']) - 1, \
