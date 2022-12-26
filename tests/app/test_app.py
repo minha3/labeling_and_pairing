@@ -149,6 +149,31 @@ def test_update_region_as_unused():
             'region which is "use=False" should be excluded'
 
 
+def test_update_region_as_reviewed():
+    with TestClient(app) as client:
+        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        assert len(testsets) > 0
+        testset = testsets[0]
+
+        testset['regions'][0].reviewed = True
+        response = client.put(f"/regions/{testset['regions'][0].id}", json=testset['regions'][0].dict(),
+                              headers={'Content-Type': 'application/json'})
+        assert response.status_code == 200
+        region = response.json()
+        assert region['reviewed'] is True
+
+        response = client.get('/regions', params={'file_id': testset['file'].id, 'reviewed': True})
+        assert response.status_code == 200
+        regions = response.json()
+        assert len(regions) == 1
+
+        response = client.get('/regions', params={'file_id': testset['file'].id, 'reviewed': False})
+        assert response.status_code == 200
+        regions = response.json()
+        assert len(regions) == len(testset['regions']) - 1, \
+            'region which is "use=False" should be excluded'
+
+
 def _insert_file(_client, filename, content):
     response = _client.post('/files', files={'file': (filename, content, 'text/csv')})
     assert response.status_code == 200
