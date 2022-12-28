@@ -72,6 +72,12 @@ def test_insert_file():
 # If the hash of image file is "6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32",
 # the path of image file should be "../pre_downloaded_images/6d/6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32"
 # Test cases for image runs after inserting temporary data into database and copying image files to image directory
+def test_insert_datasets():
+    with TestClient(app) as client:
+        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        assert len(testsets) > 0
+
+
 def test_get_images():
     with TestClient(app) as client:
         testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
@@ -98,80 +104,82 @@ def test_get_image():
         assert pil_image.height == testset['images'][0].height
 
 
-def test_get_regions_from_file():
+def test_get_bboxes_from_file():
     with TestClient(app) as client:
         testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
         assert len(testsets) > 0
         testset = testsets[0]
 
-        response = client.get('/regions', params={'file_id': testset['file'].id})
+        response = client.get('/bboxes', params={'file_id': testset['file'].id})
         assert response.status_code == 200
-        regions = response.json()
-        assert len(regions) == len(testset['regions'])
+        result = response.json()
+        assert len(result) == len(testset['bboxes'])
 
 
-def test_get_regions_from_image():
+def test_get_bboxes_from_image():
     with TestClient(app) as client:
         testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
         assert len(testsets) > 0
         testset = testsets[0]
 
-        count_region_per_image = Counter([o.image_id for o in testset['regions']])
+        cnt_of_bboxes_per_image = Counter([o.image_id for o in testset['bboxes']])
         for image in testset['images']:
-            response = client.get('/regions', params={'image_id': image.id})
+            response = client.get('/bboxes', params={'image_id': image.id})
             assert response.status_code == 200
-            assert len(response.json()) == count_region_per_image[image.id], \
-                f'total count of regions of {image} should be matched with prepared data'
+            assert len(response.json()) == cnt_of_bboxes_per_image[image.id], \
+                f'total count of bboxes of {image} should be matched with prepared data'
 
 
-def test_update_region_as_unused():
+def test_update_label_as_unused():
     with TestClient(app) as client:
         testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
         assert len(testsets) > 0
         testset = testsets[0]
 
-        testset['regions'][0].use = False
-        response = client.put(f"/regions/{testset['regions'][0].id}", json=testset['regions'][0].dict(),
+        testset['bboxes'][0].label.unused = True
+        response = client.put(f"/labels/{testset['bboxes'][0].label.id}",
+                              json=testset['bboxes'][0].label.dict(),
                               headers={'Content-Type': 'application/json'})
         assert response.status_code == 200
-        region = response.json()
-        assert region['use'] is False
+        result = response.json()
+        assert result['unused'] is True
 
-        response = client.get('/regions', params={'file_id': testset['file'].id, 'use': False})
+        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'unused': True})
         assert response.status_code == 200
-        regions = response.json()
-        assert len(regions) == 1
+        result = response.json()
+        assert len(result) == 1
 
-        response = client.get('/regions', params={'file_id': testset['file'].id, 'use': True})
+        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'unused': False})
         assert response.status_code == 200
-        regions = response.json()
-        assert len(regions) == len(testset['regions']) - 1, \
-            'region which is "use=False" should be excluded'
+        result = response.json()
+        assert len(result) == len(testset['bboxes']) - 1, \
+            'bbox which is "unused=True" should be excluded'
 
 
-def test_update_region_as_reviewed():
+def test_update_label_as_reviewed():
     with TestClient(app) as client:
         testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
         assert len(testsets) > 0
         testset = testsets[0]
 
-        testset['regions'][0].reviewed = True
-        response = client.put(f"/regions/{testset['regions'][0].id}", json=testset['regions'][0].dict(),
+        testset['bboxes'][0].label.reviewed = True
+        response = client.put(f"/labels/{testset['bboxes'][0].label.id}",
+                              json=testset['bboxes'][0].label.dict(),
                               headers={'Content-Type': 'application/json'})
         assert response.status_code == 200
-        region = response.json()
-        assert region['reviewed'] is True
+        result = response.json()
+        assert result['reviewed'] is True
 
-        response = client.get('/regions', params={'file_id': testset['file'].id, 'reviewed': True})
+        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'reviewed': True})
         assert response.status_code == 200
-        regions = response.json()
-        assert len(regions) == 1
+        result = response.json()
+        assert len(result) == 1
 
-        response = client.get('/regions', params={'file_id': testset['file'].id, 'reviewed': False})
+        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'reviewed': False})
         assert response.status_code == 200
-        regions = response.json()
-        assert len(regions) == len(testset['regions']) - 1, \
-            'region which is "use=False" should be excluded'
+        result = response.json()
+        assert len(result) == len(testset['bboxes']) - 1, \
+            'bbox which is "reviewed=True" should be excluded'
 
 
 def _insert_file(_client, filename, content):

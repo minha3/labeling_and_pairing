@@ -1,4 +1,4 @@
-from typing import List, AsyncIterable, Optional
+from typing import List, AsyncIterable, Optional, Tuple
 
 from db.models import *
 from config import load_config
@@ -81,7 +81,8 @@ class DBManager:
         for image in images:
             db_image = await session.scalar(select(Image).where(Image.hash == image.hash))
             if db_image is None:
-                db_image = Image(hash=image.hash, width=image.width, height=image.height, url=image.url, file_id=file_id)
+                db_image = Image(hash=image.hash, width=image.width, height=image.height, url=image.url,
+                                 file_id=file_id)
                 result.append(db_image)
                 session.add(db_image)
             else:
@@ -101,55 +102,90 @@ class DBManager:
         return r
 
     @staticmethod
-    async def insert_regions(session: AsyncSession, regions: List[schemas.RegionCreate]) -> List[schemas.Region]:
+    async def insert_bboxes(session: AsyncSession, pairs: List[Tuple[int, schemas.BBoxBase]], silent=True) -> List[
+        Optional[BBox]]:
         result = []
-        for region in regions:
-            db_image = await DBManager.get_image(session, region.image_id, silent=True)
+        for image_id, bbox_base in pairs:
+            db_image = await DBManager.get_image(session, image_id, silent=silent)
             if db_image is None:
+                result.append(None)
                 continue
-            query = select(Region).where(Region.image_id == region.image_id)
+            query = select(BBox).where(BBox.image_id == image_id)
             for k in ['rx1', 'ry1', 'rx2', 'ry2']:
-                query = query.where(getattr(Region, k) == getattr(region, k))
+                query = query.where(getattr(BBox, k) == getattr(bbox_base, k))
 
-            db_region = await session.scalar(query)
+            db_bbox = await session.scalar(query)
 
-            if db_region is None:
-                db_region = Region(image_id=region.image_id, rx1=region.rx1, ry1=region.ry1,
-                                   rx2=region.rx2, ry2=region.ry2)
-            db_region.update(**region.dict(exclude_unset=True))
-            result.append(db_region)
-            session.add(db_region)
+            if db_bbox is None:
+                db_bbox = BBox(image_id=image_id, rx1=bbox_base.rx1, ry1=bbox_base.ry1,
+                               rx2=bbox_base.rx2, ry2=bbox_base.ry2)
+                session.add(db_bbox)
+                result.append(db_bbox)
+            else:
+                result.append(None)
         await session.commit()
-        return [o.label_to_dict() for o in result]
+        return result
 
     @staticmethod
-    async def get_regions(session: AsyncSession, image_id: int = None, file_id: int = None, **kwargs) -> \
-            List[schemas.Region]:
-        stmt = select(Region)
+    async def get_bboxes(session: AsyncSession, image_id: int = None, file_id: int = None, **kwargs) -> List[BBox]:
+        stmt = select(BBox).execution_options(populate_existing=True)
         if image_id:
-            stmt = stmt.where(Region.image_id == image_id)
+            stmt = stmt.where(BBox.image_id == image_id)
         elif file_id:
-            stmt = stmt.where(Image.file_id == file_id).join(Image)
+            stmt = stmt.join(Image).where(Image.file_id == file_id)
 
+        join_label = False
         for k, v in kwargs.items():
-            if v is not None and hasattr(Region, k):
-                stmt = stmt.where(getattr(Region, k) == v)
+            if v is not None and hasattr(Label, k):
+                stmt = stmt.where(getattr(Label, k) == v)
+                join_label = True
 
-        query = await session.execute(statement=stmt)
+        if join_label:
+            stmt = stmt.join(Label)
 
-        return [o.label_to_dict() for o in query.scalars()]
+        return list(await session.scalars(stmt))
 
     @staticmethod
-    async def get_region(session: AsyncSession, region_id: int, silent=False) -> schemas.Region:
-        r = await session.get(Region, region_id)
+    async def get_bbox(session: AsyncSession, bbox_id: int, silent=False) -> BBox:
+        r = await session.get(BBox, bbox_id, populate_existing=True)
         if r is None and not silent:
-            raise ParameterNotFoundError(f'Region {region_id}')
+            raise ParameterNotFoundError(f'BBox {bbox_id}')
         return r
 
     @staticmethod
-    async def update_region(session: AsyncSession, region: schemas.Region):
-        db_region = await DBManager.get_region(session, region.id)
-        db_region.update(**region.dict(exclude_unset=True))
-        session.add(db_region)
+    async def insert_labels(session: AsyncSession, pairs: List[Tuple[int, schemas.LabelBase]], silent=True) -> \
+            List[Optional[Label]]:
+        result = []
+        for bbox_id, label in pairs:
+            bbox = DBManager.get_bbox(session, bbox_id, silent=silent)
+            if bbox is None:
+                result.append(None)
+                continue
+            query = select(Label).where(Label.bbox_id == bbox_id)
+            db_label = await session.scalar(query)
+
+            if db_label is None:
+                db_label = Label(bbox_id=bbox_id, **label.dict(exclude_unset=True))
+                session.add(db_label)
+                result.append(db_label)
+            else:
+                result.append(None)
         await session.commit()
-        return db_region.label_to_dict()
+        return result
+
+    @staticmethod
+    async def get_label(session: AsyncSession, label_id: int, silent: bool = False) -> Label:
+        r = await session.get(Label, label_id)
+        if r is None and not silent:
+            raise ParameterNotFoundError(f'Label {label_id}')
+        return r
+
+    @staticmethod
+    async def update_label(session: AsyncSession, label: schemas.Label) -> Label:
+        db_label = await DBManager.get_label(session, label.id)
+        for k, v in label.dict().items():
+            if k not in ['id', 'bbox_id'] and hasattr(db_label, k):
+                setattr(db_label, k, v)
+        session.add(db_label)
+        await session.commit()
+        return db_label

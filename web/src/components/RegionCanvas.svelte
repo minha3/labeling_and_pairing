@@ -1,4 +1,5 @@
 <script>
+  import LABELS from './labels.json';
   import Server from "../utils/server";
   import LabelEditor from "./LabelEditor.svelte";
   const server = new Server()
@@ -42,8 +43,8 @@
 
   function joinLabels(region_, delimiter) {
     const values = Array();
-    for (const [key, value] of Object.entries(region_.labels)) {
-      if (value != null) {
+    for (const [key, value] of Object.entries(region_.label)) {
+      if (LABELS.hasOwnProperty(key) && value != null) {
         values.push(value)
       }
     }
@@ -51,13 +52,12 @@
   }
 
   async function onEdit(regionId, key, value) {
-    if (region.hasOwnProperty(key))
-      region[key] = value
-    else if (region.labels.hasOwnProperty(key))
-      region.labels[key] = value
-    const response = await server.update_region(region.id, region)
-    if (typeof editCallback == 'function')
-      editCallback(response, key, value)
+    if (region.label.hasOwnProperty(key)) {
+      region.label[key] = value
+      const response = await server.update_label(region.label.id, region.label)
+      if (typeof editCallback == 'function')
+        editCallback(response, key, value)
+    }
   }
 
   $: drawRegion(region)
@@ -67,8 +67,8 @@
 {#if region}
   <canvas bind:this={canvas} style="display: flex; width: 100%;"></canvas>
   {#if labelEditable}
-    {#each Object.entries(region.labels) as [key, value]}
-      {#if value}
+    {#each Object.entries(region.label) as [key, value]}
+      {#if LABELS.hasOwnProperty(key) && value}
         <button type="button" class="btn btn-sm btn-outline-info" data-toggle="modal" data-target="#LabelEditor{region.id}" on:click={() => {clickedLabelType = key;}}>
           {value}
         </button>
@@ -80,14 +80,14 @@
   {/if}
   {#if reviewedEditable}
     <button class="btn btn-sm btn-outline-success"
-            on:click={() => {onEdit(region.id, 'reviewed', !region.reviewed)}}>
-      {region.reviewed? '재태깅' : '완료'}
+            on:click={() => {onEdit(region.id, 'reviewed', !region.label.reviewed)}}>
+      {region.label.reviewed? '재태깅' : '완료'}
     </button>
   {/if}
   {#if useEditable}
     <button class="btn btn-sm btn-outline-danger"
-            on:click={() => {onEdit(region.id, 'use', !region.use)}}>
-      {region.use? '삭제': '복구'}
+            on:click={() => {onEdit(region.id, 'unused', !region.label.unused)}}>
+      {region.label.unused? '복구' : '삭제'}
     </button>
   {/if}
 {/if}

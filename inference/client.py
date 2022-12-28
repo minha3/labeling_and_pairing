@@ -3,7 +3,7 @@ import logging
 import grpc
 import aiofiles
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from inference.inference_pb2_grpc import InferenceStub
 from inference.inference_pb2 import Request, Reply
 from label import translate
@@ -40,10 +40,11 @@ class InferenceClient:
             logging.exception('Unexpected exception occurred when request health check to inference server.')
             return False
 
-    async def infer(self, images: List[Tuple[schemas.Image, str]]) -> List[schemas.RegionCreate]:
+    async def infer(self, images: List[Tuple[schemas.Image, str]]) -> \
+            List[Tuple[int, schemas.BBoxBase, Optional[schemas.LabelBase]]]:
         """
         :param images: list of tuple(schemas.Image, path of image file)
-        :return:
+        :return: list of tuple(image id, schemas.RegionBase, schemas.LabelBase)
         """
         if not images:
             return []
@@ -55,7 +56,7 @@ class InferenceClient:
                 request = Request()
                 for i in range(len(images) // self._batch_size + 1):
                     coros = []
-                    for image, path in images[i*self._batch_size:(i + 1) * self._batch_size]:
+                    for image, path in images[i * self._batch_size:(i + 1) * self._batch_size]:
                         coros.append(self._make_request(request, image, path))
                     if coros:
                         await asyncio.gather(*coros)
@@ -79,13 +80,20 @@ class InferenceClient:
             request_image.data = await f.read()
 
     @staticmethod
-    def _parse_reply(reply: Reply) -> List[schemas.RegionCreate]:
+    def _parse_reply(reply: Reply) -> List[Tuple[int, schemas.BBoxBase, Optional[schemas.LabelBase]]]:
         result = []
         for region in reply.regions:
-            base_region = schemas.RegionCreate(image_id=region.image.id,
-                                               rx1=region.bbox.rx1, ry1=region.bbox.ry1,
-                                               rx2=region.bbox.rx2, ry2=region.bbox.ry2, labels={})
+            image_id = region.image.id
+            base_region = schemas.BBoxBase(rx1=region.bbox.rx1, ry1=region.bbox.ry1,
+                                           rx2=region.bbox.rx2, ry2=region.bbox.ry2)
+            labels = {}
             for label in region.labels:
-                base_region.labels[translate(label.type)] = translate(label.name, label.type)
-            result.append(base_region)
+                label_type, label_name = translate(label.type), translate(label.name, label.type)
+                if label_type and label_name:
+                    labels[label_type] = label_name
+            if labels:
+                base_label = schemas.LabelBase(**labels)
+            else:
+                base_label = None
+            result.append((image_id, base_region, base_label))
         return result

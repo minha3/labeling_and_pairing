@@ -1,4 +1,5 @@
 <script>
+  import LABELS from './labels.json';
   export let regions;
   export let callback;
   let labels = {};
@@ -11,8 +12,8 @@
       labelCount = {};
 
       regions.forEach((region) => {
-        for (const [key, value] of Object.entries(region.labels)) {
-          if (value != null) {
+        for (const [key, value] of Object.entries(region.label)) {
+          if (LABELS.hasOwnProperty(key) && value != null) {
             if (!labels.hasOwnProperty(key)) {
               labels[key] = Array()
             }
@@ -48,17 +49,15 @@
       callback(event_name, getFilteredRegions(regions, filterConditions));
   }
 
-  function getFilteredRegions(regions, labels) {
+  function getFilteredRegions(regions, filters) {
     const r = [];
     if (regions !== undefined && regions.length > 0) {
       regions.forEach((region) => {
         let isInclude = true
-        for (const [key, value] of Object.entries(region.labels)) {
-          if (labels.hasOwnProperty(key) && labels[key].length > 0) {
-            isInclude = isInclude && (labels[key].includes(value))
-          }
-          if (!isInclude) {
-            break
+        for (const [key, value] of Object.entries(region.label)) {
+          if (filters.hasOwnProperty(key) && filters[key].length > 0 && !filters[key].includes(value)) {
+            isInclude = false;
+            break;
           }
         }
         if (isInclude) {

@@ -53,9 +53,9 @@ class TestInferenceClient(unittest.IsolatedAsyncioTestCase):
     def test_parse_reply(self):
         client = InferenceClient()
         reply = Reply()
-        region = reply.regions.add()
-        region.image.id = 1
-        region.bbox.rx1, region.bbox.ry1, region.bbox.rx2, region.bbox.ry2 = 0.1, 0.1, 0.2, 0.2
+        bbox = reply.regions.add()
+        bbox.image.id = 1
+        bbox.bbox.rx1, bbox.bbox.ry1, bbox.bbox.rx2, bbox.bbox.ry2 = 0.1, 0.1, 0.2, 0.2
         r = client._parse_reply(reply)
         self.assertEqual(1, len(r))
 
@@ -64,5 +64,6 @@ class TestInferenceClient(unittest.IsolatedAsyncioTestCase):
         image = schemas.Image(**self.db_image)
         r = await client.infer([(image, self.db_image_path)])
         self.assertEqual(1, len(r))
-        region = r[0]
-        self.assertEqual(image.id, region.image_id, msg='inferred region should have the requested image id')
+        data = r[0]
+        self.assertEqual(tuple, type(data))
+        self.assertEqual(image.id, data[0], msg='inferred data should have the requested image id')

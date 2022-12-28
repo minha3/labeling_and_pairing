@@ -9,21 +9,30 @@ image1:
   width: 600
   height: 600
   url: test_url1
-region1:
+bbox1:
   rx1: 0.208333
   ry1: 0.24
   rx2: 0.796667
   ry2: 0.898333
-  labels:
-    region: top
-    category: top
-    fabric: padded
-region2:
+bbox2:
   rx1: 0.208333
   ry1: 0.24
   rx2: 0.796667
   ry2: 0.898333
-  labels:
-    region: top
-    category: top
-    sleeve_length: long_sleeve
+bbox3:
+  rx1: 0.3
+  ry1: 0.4
+  rx2: 0.796667
+  ry2: 0.898333
+label1:
+  region: top
+  category: top
+  fabric: padded
+label2:
+  region: top
+  category: top
+  sleeve_length: long_sleeve
+label3:
+  region: outer
+  category: top
+  sleeve_length: long_sleeve

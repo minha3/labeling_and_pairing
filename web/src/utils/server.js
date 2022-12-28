@@ -79,14 +79,14 @@ class Server extends API {
         return`${this.apibase}/images/${imageId}`
     }
 
-    get_regions_from_file(fileId, params) {
-        return this.GET(`${this.apibase}/regions?file_id=${fileId}${this.join_param(params)}`)
+    get_bboxes_from_file(fileId, params) {
+        return this.GET(`${this.apibase}/bboxes?file_id=${fileId}${this.join_param(params)}`)
     }
 
-    update_region(regionId, data) {
+    update_label(labelId, data) {
         const headers = new Headers();
         headers.append('Content-Type', 'application/json');
-        return this.PUT(`${this.apibase}/regions/${regionId}`, JSON.stringify(data), headers)
+        return this.PUT(`${this.apibase}/labels/${labelId}`, JSON.stringify(data), headers)
     }
 }
 

@@ -37,31 +37,31 @@
     element.canDelete = (element.cnt_url === -1 || element.cnt_image === 0)
     if (element.cnt_url == null) {
       element.readable_cnt_image = "진행중"
-      element.readable_cnt_region = "대기중"
+      element.readable_cnt_bbox = "대기중"
     }
     else if (element.cnt_url === -1) {
       element.readable_cnt_image = "실패"
-      element.readable_cnt_region = "진행불가"
+      element.readable_cnt_bbox = "진행불가"
     }
     else if (element.cnt_image == null) {
       element.readable_cnt_image = `진행중/${element.cnt_url}`
-      element.readable_cnt_region = "대기중"
+      element.readable_cnt_bbox = "대기중"
     }
     else if (element.cnt_image === 0) {
       element.readable_cnt_image = `${element.cnt_image}/${element.cnt_url}`
-      element.readable_cnt_region = "진행불가"
+      element.readable_cnt_bbox = "진행불가"
     }
-    else if (element.cnt_region == null) {
+    else if (element.cnt_bbox == null) {
       element.readable_cnt_image = `${element.cnt_image}/${element.cnt_url}`
-      element.readable_cnt_region = "진행중"
+      element.readable_cnt_bbox = "진행중"
     }
-    else if (element.cnt_region === -1) {
+    else if (element.cnt_bbox === -1) {
       element.readable_cnt_image = `${element.cnt_image}/${element.cnt_url}`
-      element.readable_cnt_region = "진행불가"
+      element.readable_cnt_bbox = "진행불가"
     }
     else {
       element.readable_cnt_image = `${element.cnt_image}/${element.cnt_url}`
-      element.readable_cnt_region = `${element.cnt_region}`
+      element.readable_cnt_bbox = `${element.cnt_bbox}`
     }
   }
 
@@ -115,9 +115,9 @@
         <td>{filestat.name}</td>
         <td>{filestat.size}</td>
         <td>{filestat.readable_cnt_image}</td>
-        <td>{filestat.readable_cnt_region}</td>
+        <td>{filestat.readable_cnt_bbox}</td>
         <td><a href="{$url(`/labeling/${filestat.id}`)}" hidden={filestat.canDelete}>시작</a>,
-          <a href="{$url(`/labeled/${filestat.id}`)}" hidden={filestat.canDelete}>보기</a>,
+          <a href="{$url(`/reviewed/${filestat.id}`)}" hidden={filestat.canDelete}>보기</a>,
           <a href="{$url(`/unused/${filestat.id}`)}" hidden={filestat.canDelete}>휴지통</a>
         </td>
         <td><button class="btn btn-outline-danger" on:click={deleteFile(filestat)}>삭제</button></td>

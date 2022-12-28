@@ -12,7 +12,7 @@
   let cursorGrid = {'start': 0};
 
   async function getRegions() {
-    allRegions = await server.get_regions_from_file(dataset, {'use': false});
+    allRegions = await server.get_bboxes_from_file(dataset, {'unused': true});
   }
 
   function getTargetRegions(event, target) {

@@ -9,103 +9,304 @@ files:
         width: 600
         height: 600
         url: test_url1
-        regions:
+        bboxes:
           - rx1: 0.208333
             ry1: 0.24
             rx2: 0.796667
             ry2: 0.898333
-            region: top
-            style: street
+            label:
+              region: top
+              style: street
       - hash: 66926062660708faf5727510c35aca35862e774ccee50f395225dd0c6baf0cb4
         width: 360
         height: 360
         url: test_url2
-        regions:
+        bboxes:
           - rx1: 0.194444
             ry1: 0.0194444
             rx2: 0.797222
             ry2: 0.661111
-            region: top
-            style: genderless
+            label:
+              region: top
+              style: genderless
       - hash: 53d858c27917a5c1eb63f97682378ef455e0718c1306864093fddbd8a4f72025
         width: 550
         height: 550
         url: test_url3
-        regions:
+        bboxes:
           - rx1: 0.167273
             ry1: 0.309091
             rx2: 0.810909
             ry2: 0.963636
-            region: top
-            style: feminine
+            label:
+              region: top
+              style: feminine
       - hash: 8fef49d8d971d28529ea8f1c587eb2a439f92604f620416925639ac29606dd96
         width: 550
         height: 550
         url: test_url4
-        regions:
+        bboxes:
           - rx1: 0.267273
             ry1: 0.298182
             rx2: 0.870909
             ry2: 0.950909
-            region: top
-            style: modern
+            label:
+              region: top
+              style: modern
       - hash: d1d2b4943b1c2f5a85f5cb744c27f46753d69ea2f04d85fb46b6c0035bd0a3e4
         width: 600
         height: 600
         url: test_url5
-        regions:
+        bboxes:
           - rx1: 0.275
             ry1: 0.156667
             rx2: 0.875
             ry2: 0.806667
-            region: top
-            style: feminine
+            label:
+              region: top
+              style: feminine
       - hash: d854ac7086d543ae68e9ca3ea7f0f2666801a172f28d049fd35a0acdb3c3892a
         width: 500
         height: 500
         url: test_url6
-        regions:
+        bboxes:
           - rx1: 0.282
             ry1: 0.294
             rx2: 0.8
             ry2: 0.858
-            region: top
-            style: street
+            label:
+              region: top
+              style: street
       - hash: 843cf17dd41990c2fa8ffbf94e8b86eb6a0cde974fa0e2e25e74d4c3fa077dc2
         width: 450
         height: 450
         url: test_url7
-        regions:
+        bboxes:
           - rx1: 0.102222
             ry1: 0.0111111
             rx2: 0.764444
             ry2: 0.655556
-            region: top
-            style: street
+            label:
+              region: top
+              style: street
       - hash: a55e9a9573374aa5ad9f51b1a06a58e1ac30fdecf2bc7f6d088848e33fc9acb4
         width: 500
         height: 500
         url: test_url8
-        regions:
+        bboxes:
           - rx1: 0.232
             ry1: 0.034
             rx2: 0.89
             ry2: 0.684
-            region: top
-            style: street
+            label:
+              region: top
+              style: street
       - hash: 42bc6e2703de5161083d9b3e0b58232f3519ff36952f823f30bef6255fcdb212
         width: 800
         height: 800
         url: test_url9
-        regions: [ ]
+        bboxes: [ ]
       - hash: f98798590469e16805083f66991d4281481378cbda29e4731351f2a7193bdbe0
         width: 800
         height: 800
         url: test_url10
-        regions:
+        bboxes:
           - rx1: 0.185
             ry1: 0.1225
             rx2: 0.85625
             ry2: 0.78625
-            region: top
-            style: street
+            label:
+              region: top
+              style: street
+  - name: test_file2.csv
+    size: 748
+    cnt_url: 10
+    cnt_image: 10
+    cnt_region: 17
+    images:
+      - hash: f0c6674250c743fa0e5d7c7975aafb02c983035b2a3b32933f7cac4108d4c102
+        width: 600
+        height: 600
+        url: test_url1
+        bboxes:
+          - rx1: 0.365
+            ry1: 0.06
+            rx2: 0.628333
+            ry2: 0.71
+            label:
+              region: bottom
+              style: street
+              reviewed: true
+      - hash: 4ae7cb20d288a0a20d76cefa932a7f256a4fdee9b67baa000458daeac8621fa1
+        width: 600
+        height: 600
+        url: test_url2
+        bboxes:
+          - rx1: 0.576667
+            ry1: 0.14
+            rx2: 0.88
+            ry2: 0.788333
+            label:
+              region: bottom
+              style: modern
+              reviewed: true
+          - rx1: 0.17
+            ry1: 0.113333
+            rx2: 0.401667
+            ry2: 0.763333
+            label:
+              region: bottom
+              style: modern
+              reviewed: true
+      - hash: 8d5cecaf9c803b918e1c77a017a43532c88ac86ba8a26d94f83d35abedf772ed
+        width: 600
+        height: 600
+        url: test_url3
+        bboxes:
+          - rx1: 0.278333
+            ry1: 0.14
+            rx2: 0.7
+            ry2: 0.485
+            label:
+              region: top
+              style: feminine
+              reviewed: true
+          - rx1: 0.298333
+            ry1: 0.345
+            rx2: 0.6
+            ry2: 0.946667
+            label:
+              region: bottom
+              style: feminine
+              reviewed: true
+      - hash: bbad9b6d45c164113a105570b53dd91de8d4fdb9f502fddb82c25f8dd9821069
+        width: 600
+        height: 600
+        url: test_url4
+        bboxes:
+          - rx1: 0.131667
+            ry1: 0.361667
+            rx2: 0.366667
+            ry2: 0.891667
+            label:
+              region: bottom
+              style: feminine
+              reviewed: true
+          - rx1: 0.0983333
+            ry1: 0.12
+            rx2: 0.401667
+            ry2: 0.498333
+            label:
+              region: top
+              style: feminine
+              reviewed: true
+          - rx1: 0.613333
+            ry1: 0.11
+            rx2: 0.873333
+            ry2: 0.775
+            label:
+              region: bottom
+              style: feminine
+              reviewed: true
+      - hash: 7e01a2c6632157ebe909f5711dc0b8a0c756364b0468cce3feb4e3c1d2cedd2d
+        width: 1000
+        height: 1000
+        url: test_url5
+        bboxes:
+          - rx1: 0.37
+            ry1: 0.069
+            rx2: 0.634
+            ry2: 0.731
+            label:
+              region: bottom
+              style: street
+              reviewed: true
+      - hash: 77a81aa06c51dc52300b0ad7aafcf1cdbf85c19b53346a746b521eefeff76614
+        width: 600
+        height: 600
+        url: test_url6
+        bboxes:
+          - rx1: 0.461667
+            ry1: 0
+            rx2: 0.863333
+            ry2: 0.226667
+            label:
+              region: top
+              style: street
+              reviewed: true
+          - rx1: 0.27
+            ry1: 0.12
+            rx2: 0.705
+            ry2: 0.735
+            label:
+              region: bottom
+              style: street
+              reviewed: true
+      - hash: a37de83c53ae9ab589572bfb98e731ca507ba8306caf3ac1ffec1c3fdf12b923
+        width: 720
+        height: 720
+        url: test_url7
+        bboxes: [ ]
+      - hash: 6e0e5bfa4cd153cad07622d1c3783adb9131fd0b331ef01ab73b9304e370e67d
+        width: 600
+        height: 600
+        url: test_url8
+        bboxes:
+          - rx1: 0.123333
+            ry1: 0.315
+            rx2: 0.72
+            ry2: 0.951667
+            label:
+              region: bottom
+              style: sophisticated
+              reviewed: true
+          - rx1: 0.148333
+            ry1: 0
+            rx2: 0.821667
+            ry2: 0.373333
+            label:
+              region: top
+              style: sophisticated
+              reviewed: true
+      - hash: 520013a5aec155feae11894a5af41a1b3300ce8703e3fed0d2bb7467ef988e6e
+        width: 564
+        height: 636
+        url: test_url9
+        bboxes:
+          - rx1: 0.324468
+            ry1: 0.231132
+            rx2: 0.625886
+            ry2: 0.794025
+            label:
+              region: bottom
+              style: country
+              reviewed: true
+          - rx1: 0.347518
+            ry1: 0.0204403
+            rx2: 0.70922
+            ry2: 0.29717
+            label:
+              region: top
+              style: country
+              reviewed: true
+      - hash: b4af7d396e8f4f356a192f370f60ae127431da3ba59d6dd8724770b4ee27982b
+        width: 800
+        height: 800
+        url: test_url10
+        bboxes:
+          - rx1: 0.38125
+            ry1: 0.1225
+            rx2: 0.64125
+            ry2: 0.77875
+            label:
+              region: bottom
+              style: street
+              reviewed: true
+          - rx1: 0.31125
+            ry1: 0
+            rx2: 0.77125
+            ry2: 0.34625
+            label:
+              region: top
+              style: street
+              reviewed: true

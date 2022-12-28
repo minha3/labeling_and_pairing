@@ -142,9 +142,22 @@ async def infer_images(file: schemas.File):
                 db_image_path = file_manager.get_image_file_path(image_.hash)
                 inference_images.append((image_, db_image_path))
 
-            regions = await inference_client.infer(inference_images)
-            db_regions = await db_manager.insert_regions(session=session, regions=regions)
-            file.cnt_region = len(db_regions)
+            result = await inference_client.infer(inference_images)
+            try:
+                db_bboxes = await db_manager.insert_bboxes(session=session, pairs=[(o[0], o[1]) for o in result])
+                file.cnt_bbox = len(db_bboxes)
+            except Exception as e:
+                file.cnt_bbox = -1
+                file.error = 'Failed to insert bboxes'
+                logging.critical(f'Failed to insert bboxes of file {file.id}. reason: {e}')
+            else:
+                try:
+                    await db_manager.insert_labels(session=session,
+                                                   pairs=[(db_bboxes[i].id, result[i][2]) for i in range(len(result))
+                                                          if db_bboxes[i] and result[i][2]])
+                except Exception as e:
+                    file.error = 'Failed to insert labels'
+                    logging.critical(f'Failed to insert labels of file {file.id}. reason: {e}')
         else:
             file.cnt_region = -1
             file.error = 'Failed to check the health of inference server'
@@ -171,22 +184,22 @@ async def get_image(image_id: int, session=Depends(db_manager.get_session)):
     return FileResponse(path=image_path)
 
 
-@app.get('/regions', response_model=List[schemas.Region])
+@app.get('/bboxes', response_model=List[schemas.BBox])
 @exception_handler
-async def get_regions(image_id: Optional[int] = None, file_id: Optional[int] = None,
-                      use: Optional[bool] = None, reviewed: Optional[bool] = None,
-                      session=Depends(db_manager.get_session)):
-    return await db_manager.get_regions(session, image_id=image_id, file_id=file_id,
-                                        use=use, reviewed=reviewed)
+async def get_bboxes(image_id: Optional[int] = None, file_id: Optional[int] = None,
+                     unused: Optional[bool] = None, reviewed: Optional[bool] = None,
+                     session=Depends(db_manager.get_session)):
+    return await db_manager.get_bboxes(session, image_id=image_id, file_id=file_id,
+                                       unused=unused, reviewed=reviewed)
 
 
-@app.put('/regions/{region_id}', response_model=schemas.Region)
+@app.put('/labels/{label_id}', response_model=schemas.Label)
 @exception_handler
-async def update_region(region_id: int, region: schemas.Region, session=Depends(db_manager.get_session)):
-    if region_id != region.id:
+async def update_label(label_id: int, label: schemas.Label, session=Depends(db_manager.get_session)):
+    if label_id != label.id:
         raise HTTPException(status_code=400, detail='Resource id in the path and '
                                                     'resource id in the payload is different')
-    return await db_manager.update_region(session, region)
+    return await db_manager.update_label(session, label)
 
 
 if __name__ == '__main__':

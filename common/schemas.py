@@ -37,7 +37,7 @@ class File(FileBase):
     created_at: datetime
     cnt_url: Optional[int]
     cnt_image: Optional[int]
-    cnt_region: Optional[int]
+    cnt_bbox: Optional[int]
     cnt_download_failure: Optional[int]
     cnt_duplicated_image: Optional[int]
     error: Optional[str]
@@ -46,23 +46,50 @@ class File(FileBase):
         orm_mode = True
 
 
-class RegionBase(BaseModel):
-    image_id: int
+class LabelBase(BaseModel):
+    region: str
+    style: Optional[str]
+    category: Optional[str]
+    fabric: Optional[str]
+    print: Optional[str]
+    detail: Optional[str]
+    color: Optional[str]
+    center_back_length: Optional[str]
+    sleeve_length: Optional[str]
+    neckline: Optional[str]
+    fit: Optional[str]
+    collar: Optional[str]
+
+
+class LabelCreate(LabelBase):
+    bbox_id: int
+
+
+class Label(LabelBase):
+    id: int
+    bbox_id: int
+    unused: bool
+    reviewed: bool
+
+    class Config:
+        orm_mode = True
+
+
+class BBoxBase(BaseModel):
     rx1: float
     ry1: float
     rx2: float
     ry2: float
-    labels: dict
 
 
-class RegionCreate(RegionBase):
-    pass
+class BBoxCreate(BBoxBase):
+    image_id: int
 
 
-class Region(RegionBase):
+class BBox(BBoxBase):
     id: int
-    use: bool
-    reviewed: bool
+    image_id: int
+    label: Optional[Label]
 
     class Config:
         orm_mode = True

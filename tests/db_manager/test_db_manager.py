@@ -18,8 +18,12 @@ class TestDBManager(unittest.IsolatedAsyncioTestCase):
         self.FILE1 = schemas.FileCreate(**self.db_data['file1'])
         self.FILE2 = schemas.FileCreate(**self.db_data['file2'])
         self.IMAGE1 = schemas.ImageCreate(**self.db_data['image1'])
-        self.REGION_BASE1 = self.db_data['region1']
-        self.REGION_BASE2 = self.db_data['region2']
+        self.BBOX_BASE1 = schemas.BBoxBase(**self.db_data['bbox1'])
+        self.BBOX_BASE2 = schemas.BBoxBase(**self.db_data['bbox2'])
+        self.BBOX_BASE3 = schemas.BBoxBase(**self.db_data['bbox3'])
+        self.LABEL_BASE1 = schemas.LabelBase(**self.db_data['label1'])
+        self.LABEL_BASE2 = schemas.LabelBase(**self.db_data['label2'])
+        self.LABEL_BASE3 = schemas.LabelBase(**self.db_data['label3'])
 
         load_labels(my_dir)
         self.db_manager = DBManager(db_config={'dialect': 'sqlite',
@@ -48,30 +52,36 @@ class TestDBManager(unittest.IsolatedAsyncioTestCase):
             r = await self.db_manager.get_file(session, r.id)
             self.assertIsNotNone(r)
 
-    async def test_04_get_non_existent_file(self):
+    async def test_04_file_from_orm(self):
+        async for session in self.db_manager.get_session():
+            r = await self.db_manager.insert_file(session, self.FILE1)
+            r = await self.db_manager.get_file(session, r.id)
+            self.assertIsNotNone(schemas.File.from_orm(r))
+
+    async def test_05_get_non_existent_file(self):
         async for session in self.db_manager.get_session():
             with self.assertRaises(ParameterNotFoundError):
                 await self.db_manager.get_file(session, 1)
 
-    async def test_05_get_non_existent_file_silently(self):
+    async def test_06_get_non_existent_file_silently(self):
         async for session in self.db_manager.get_session():
             r = await self.db_manager.get_file(session, 1, silent=True)
             self.assertIsNone(r)
 
-    async def test_06_insert_images(self):
+    async def test_07_insert_images(self):
         async for session in self.db_manager.get_session():
             file1 = await self.db_manager.insert_file(session, self.FILE1)
             r = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
             self.assertEqual(1, len(r))
 
-    async def test_07_insert_duplicate_imagehash_on_same_file(self):
+    async def test_08_insert_duplicate_imagehash_on_same_file(self):
         async for session in self.db_manager.get_session():
             file1 = await self.db_manager.insert_file(session, self.FILE1)
             await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
             r = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
             self.assertEqual(0, len(r), msg='Inserting an image with a duplicate hash on same file should be ignored silently')
 
-    async def test_08_insert_duplicate_imagehash_on_other_files(self):
+    async def test_09_insert_duplicate_imagehash_on_other_files(self):
         self.assertNotEqual(self.FILE1.name, self.FILE2.name,
                             msg='Prepare two files with different names')
         async for session in self.db_manager.get_session():
@@ -81,111 +91,37 @@ class TestDBManager(unittest.IsolatedAsyncioTestCase):
             r = await self.db_manager.insert_images(session, [self.IMAGE1], file2.id)
             self.assertEqual(0, len(r), msg='Inserting an image with a duplicate hash on other files should be ignored silently')
 
-    async def test_09_get_existent_images(self):
+    async def test_10_get_existent_images(self):
         async for session in self.db_manager.get_session():
             file1 = await self.db_manager.insert_file(session, self.FILE1)
             await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
             r = await self.db_manager.get_images(session, file1.id)
             self.assertEqual(1, len(r))
 
-    async def test_10_get_non_existent_images(self):
+    async def test_11_image_from_orm(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+            await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            r = await self.db_manager.get_images(session, file1.id)
+            self.assertIsNotNone(schemas.Image.from_orm(r[0]))
+
+    async def test_12_get_non_existent_images(self):
         async for session in self.db_manager.get_session():
             file1 = await self.db_manager.insert_file(session, self.FILE1)
             r = await self.db_manager.get_images(session, file1.id)
             self.assertEqual(0, len(r))
 
-    async def test_11_get_non_existent_image(self):
+    async def test_13_get_non_existent_image(self):
         async for session in self.db_manager.get_session():
             with self.assertRaises(ParameterNotFoundError):
                 await self.db_manager.get_image(session, 1)
 
-    async def test_12_get_non_existent_image_silently(self):
+    async def test_14_get_non_existent_image_silently(self):
         async for session in self.db_manager.get_session():
             r = await self.db_manager.get_image(session, 1, silent=True)
             self.assertIsNone(r)
 
-    async def test_13_insert_regions(self):
-        async for session in self.db_manager.get_session():
-            file1 = await self.db_manager.insert_file(session, self.FILE1)
-            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
-            image1 = images[0]
-
-            r = await self.db_manager.insert_regions(session, [schemas.RegionCreate(**self.REGION_BASE1,
-                                                                                    **{'image_id': image1.id})])
-            self.assertEqual(1, len(r))
-
-    async def test_14_update_labels_when_inserting_non_existent_region(self):
-        async for session in self.db_manager.get_session():
-            file1 = await self.db_manager.insert_file(session, self.FILE1)
-            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
-            image1 = images[0]
-
-            regions = await self.db_manager.insert_regions(session, [schemas.RegionCreate(**self.REGION_BASE1,
-                                                                                          **{'image_id': image1.id})])
-            region1 = regions[0]
-            for k, v in region1.labels.items():
-                if k in self.REGION_BASE1['labels']:
-                    self.assertEqual(self.REGION_BASE1['labels'][k], v,
-                                     msg=f'The value of label type "{k}" should be same with query')
-                else:
-                    self.assertIsNone(v, msg=f'The value of label type "{k}" should be None')
-
-    async def test_15_update_labels_when_inserting_existent_region(self):
-        """
-        재학습 등의 이유로 저장된 영역의 라벨만 업데이트해야하는 경우가 있다.
-        재학습 시에는 새로 검출되는 영역도 포함될 수 있어 insert 함수를 사용한다.
-        따라서 insert 함수는 이미 존재하는 영역인 경우에 라벨 값을 갱신할 수 있어야 한다.
-        """
-        self.assertEqual({self.REGION_BASE1[k] for k in ['rx1', 'ry1', 'rx2', 'ry2']},
-                         {self.REGION_BASE2[k] for k in ['rx1', 'ry1', 'rx2', 'ry2']},
-                         msg='Prepare two regions with same bounding box')
-        self.assertNotEqual(self.REGION_BASE1['labels'].keys(), self.REGION_BASE2['labels'].keys(),
-                            msg='Prepare two regions with different label types')
-        async for session in self.db_manager.get_session():
-            file1 = await self.db_manager.insert_file(session, self.FILE1)
-            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
-            image1 = images[0]
-
-            regions = await self.db_manager.insert_regions(session, [schemas.RegionCreate(**self.REGION_BASE1,
-                                                                                          **{'image_id': image1.id})])
-            region_id = regions[0].id
-
-            await self.db_manager.insert_regions(session, [schemas.RegionCreate(**self.REGION_BASE2,
-                                                                                **{'image_id': image1.id})])
-
-            region1 = await self.db_manager.get_region(session, region_id)
-            for k, v in region1.labels.items():
-                if k in self.REGION_BASE2['labels']:
-                    self.assertEqual(self.REGION_BASE2['labels'][k], v,
-                                     msg=f'The value of label type "{k}" should be same with query')
-                else:
-                    self.assertIsNone(v, msg=f'The value of label type "{k}" should be None')
-
-    async def test_17_get_regions_with_image_id(self):
-        async for session in self.db_manager.get_session():
-            file1 = await self.db_manager.insert_file(session, self.FILE1)
-            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
-            image1 = images[0]
-
-            await self.db_manager.insert_regions(session, [schemas.RegionCreate(**self.REGION_BASE1,
-                                                                                **{'image_id': image1.id})])
-
-            r = await self.db_manager.get_regions(session, image1.id)
-            self.assertEqual(1, len(r))
-
-    async def test_18_get_regions_with_file_id(self):
-        async for session in self.db_manager.get_session():
-            file1 = await self.db_manager.insert_file(session, self.FILE1)
-            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
-            image1 = images[0]
-
-            await self.db_manager.insert_regions(session, [schemas.RegionCreate(**self.REGION_BASE1,
-                                                                                **{'image_id': image1.id})])
-
-            r = await self.db_manager.get_regions(session, file1.id)
-            self.assertEqual(1, len(r))
-
-    async def test_19_delete_image_automatically_in_cascade(self):
+    async def test_15_delete_image_automatically_in_cascade(self):
         async for session in self.db_manager.get_session():
             file1 = await self.db_manager.insert_file(session, self.FILE1)
 
@@ -197,21 +133,186 @@ class TestDBManager(unittest.IsolatedAsyncioTestCase):
                                    msg='Images should be automatically deleted when a related file is deleted'):
                 await self.db_manager.get_image(session, image1.id)
 
-    async def test_20_delete_region_automatically_in_cascade(self):
+    async def test_16_insert_bboxes(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+
+            r = await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+            self.assertEqual(1, len(r))
+
+    async def test_17_get_bboxes_with_image_id(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+            await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+
+            r = await self.db_manager.get_bboxes(session, image_id=image1.id)
+            self.assertEqual(1, len(r))
+
+    async def test_18_get_bboxes_with_file_id(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+            await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+
+            r = await self.db_manager.get_bboxes(session, file1.id)
+            self.assertEqual(1, len(r))
+
+    async def test_19_bbox_from_orm(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+            await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+
+            r = await self.db_manager.get_bboxes(session, file1.id)
+            o = schemas.BBox.from_orm(r[0])
+            self.assertIsNotNone(o)
+            self.assertIsNone(o.label)
+
+    async def test_20_delete_bbox_automatically_in_cascade(self):
         async for session in self.db_manager.get_session():
             file1 = await self.db_manager.insert_file(session, self.FILE1)
 
             images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
             image1 = images[0]
 
-            regions = await self.db_manager.insert_regions(session, [schemas.RegionCreate(**self.REGION_BASE1,
-                                                                                          **{'image_id': image1.id})])
-            region1 = regions[0]
+            bboxes = await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+            bbox1 = bboxes[0]
 
             await self.db_manager.delete_file(session, file1.id)
             with self.assertRaises(ParameterNotFoundError,
-                                   msg='Regions should be automatically deleted when a related file is deleted'):
-                await self.db_manager.get_region(session, region1.id)
+                                   msg='BBoxes should be automatically deleted when a related file is deleted'):
+                await self.db_manager.get_bbox(session, bbox1.id)
+
+            r = await self.db_manager.get_bboxes(session, file_id=file1.id)
+            self.assertEqual(0, len(r),
+                             msg='BBoxes should be automatically deleted when a related file is deleted')
+
+    async def test_21_insert_labels(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+
+            bboxes = await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+            bbox1 = bboxes[0]
+
+            r = await self.db_manager.insert_labels(session, [(bbox1.id, self.LABEL_BASE1)])
+            self.assertEqual(1, len(r))
+
+    async def test_22_get_bbox_with_label(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+
+            bboxes = await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+            bbox1 = bboxes[0]
+
+            await self.db_manager.insert_labels(session, [(bbox1.id, self.LABEL_BASE1)])
+
+            r = await self.db_manager.get_bbox(session, bbox_id=bbox1.id)
+            self.assertEqual(self.LABEL_BASE1.region, r.label.region)
+
+    async def test_23_get_bboxes_with_label(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+
+            bboxes = await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+            bbox1 = bboxes[0]
+
+            await self.db_manager.insert_labels(session, [(bbox1.id, self.LABEL_BASE1)])
+
+            r = await self.db_manager.get_bboxes(session, file_id=file1.id)
+            self.assertEqual(1, len(r))
+            self.assertEqual(self.LABEL_BASE1.region, r[0].label.region)
+
+    async def test_24_bbox_from_orm_with_label(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+
+            bboxes = await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+            bbox1 = bboxes[0]
+
+            await self.db_manager.insert_labels(session, [(bbox1.id, self.LABEL_BASE1)])
+
+            r = await self.db_manager.get_bboxes(session, file_id=file1.id)
+            o = schemas.BBox.from_orm(r[0])
+            self.assertIsNotNone(o)
+            self.assertIsNotNone(o.label)
+
+    async def test_25_get_bboxes_with_filters(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+
+            bboxes = await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+            bbox1 = bboxes[0]
+
+            await self.db_manager.insert_labels(session, [(bbox1.id, self.LABEL_BASE1)])
+
+            r = await self.db_manager.get_bboxes(session, file_id=file1.id, unused=False)
+            self.assertEqual(1, len(r))
+            self.assertEqual(self.LABEL_BASE1.region, r[0].label.region)
+
+            r = await self.db_manager.get_bboxes(session, file_id=file1.id, reviewed=True)
+            self.assertEqual(0, len(r))
+
+    async def test_26_get_existent_label(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+
+            bboxes = await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+            bbox1 = bboxes[0]
+
+            labels = await self.db_manager.insert_labels(session, [(bbox1.id, self.LABEL_BASE1)])
+            label1 = labels[0]
+
+            r = await self.db_manager.get_label(session, label1.id)
+            self.assertIsNotNone(r)
+
+    async def test_27_get_non_existent_label(self):
+        async for session in self.db_manager.get_session():
+            with self.assertRaises(ParameterNotFoundError):
+                await self.db_manager.get_label(session, 1)
+
+    async def test_28_update_label(self):
+        self.assertNotEqual(self.LABEL_BASE1.region, self.LABEL_BASE3.region,
+                            msg='The region values of two regions should be different. '
+                                'Because region value is used as filter option')
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+
+            bboxes = await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1)])
+            bbox1 = bboxes[0]
+
+            labels = await self.db_manager.insert_labels(session, [(bbox1.id, self.LABEL_BASE1)])
+            label1 = schemas.Label.from_orm(labels[0])
+            label1.region = self.LABEL_BASE3.region
+
+            label = await self.db_manager.update_label(session, label1)
+            self.assertEqual(self.LABEL_BASE3.region, label.region)
 
 
 if __name__ == '__main__':
