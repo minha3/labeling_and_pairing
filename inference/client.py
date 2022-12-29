@@ -2,6 +2,7 @@ import asyncio
 import logging
 import grpc
 import aiofiles
+import time
 
 from typing import List, Tuple, Optional
 from inference.inference_pb2_grpc import InferenceStub
@@ -51,22 +52,38 @@ class InferenceClient:
 
         result = []
         try:
-            async with grpc.aio.insecure_channel(self._addr) as channel:
+            async with grpc.aio.insecure_channel(self._addr,
+                                                 options=[('grpc.max_send_message_length', 100 * 1024 * 1024),
+                                                          ('grpc.max_receive_message_length', 100 * 1024 * 1024)]) \
+                    as channel:
                 client = InferenceStub(channel)
-                request = Request()
-                for i in range(len(images) // self._batch_size + 1):
+                total = len(images)
+                for i in range(total // self._batch_size + 1):
+                    request = Request()
                     coros = []
-                    for image, path in images[i * self._batch_size:(i + 1) * self._batch_size]:
+                    s = i * self._batch_size
+                    e = (i + 1) * self._batch_size
+                    for image, path in images[s:e]:
                         coros.append(self._make_request(request, image, path))
                     if coros:
                         await asyncio.gather(*coros)
-                        result.extend(self._parse_reply(await client.compute(request)))
+                        try:
+                            t = time.time()
+                            reply = await client.compute(request)
+                            result.extend(self._parse_reply(reply))
+                            logging.debug(
+                                f'Parsing replies completed. elapsed: {time.time() - t}. image ids: {s} ~ {e} / {total}')
+                        except KeyboardInterrupt:
+                            logging.info(f'Stopped to parse replies. image ids {s} ~ {e} / {total}')
+                            return result
+                        except grpc.aio.AioRpcError:
+                            logging.exception(f'Failed to parse replies. image ids {s} ~ {e} / {total}')
         except Exception:
-            file_ids = {o[0].file_id for o in images}
-            file_ids_str = ','.join(file_ids[:3]) + ',...' if len(file_ids) > 3 else ''
+            file_ids = list({o[0].file_id for o in images})
+            file_ids_str = ','.join(map(str, file_ids[:3])) + (',...' if len(file_ids) > 3 else '')
             logging.exception(f'Unexpected exception occurred when request images of files'
                               f' [{file_ids_str}] to inference server.'
-                              f' Total count of processed images is {len(result)}/{len(images)}.')
+                              f' Total count of processed images is {len(result)}/{total}.')
 
         return result
 
