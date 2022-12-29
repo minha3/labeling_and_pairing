@@ -19,6 +19,7 @@ Labels and images are taken from [K-Fashion dataset](https://aihub.or.kr/aihubda
 - API server downloads and saves images and sends it to inference server.
 - API server stores the response received from inference server in the database.
 - User review images, regions and labels and modify labels.
+- User export reviewed bounding boxes as YOLO data format.
 
 ## Requirements
 
