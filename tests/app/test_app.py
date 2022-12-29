@@ -182,6 +182,47 @@ def test_update_label_as_reviewed():
             'bbox which is "reviewed=True" should be excluded'
 
 
+def test_export_file_to_yolo_data_format():
+    with TestClient(app) as client:
+        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        assert len(testsets) > 1
+        testset = testsets[1]
+
+        response = client.get(f"/export/{testset['file'].id}")
+        assert response.status_code == 200
+
+        count_of_filtered_images = len({o.image_id for o in testset['bboxes']})
+        result = response.json()['path']
+        count_of_saved_files = 0
+        for dirpath, dirnames, filenames in os.walk(result):
+            for filename in filenames:
+                if os.path.isfile(os.path.join(dirpath, filename)):
+                    count_of_saved_files += 1
+        assert count_of_saved_files == 2 * count_of_filtered_images + 1, \
+            'exported data should contain as many .jpg and .txt files as number of images and one .yml file'
+
+
+def test_export_file_to_yolo_data_format_with_filters():
+    with TestClient(app) as client:
+        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        assert len(testsets) > 1
+        testset = testsets[1]
+
+        response = client.get(f"/export/{testset['file'].id}", params={'filters': 'region=top'})
+        assert response.status_code == 200
+
+        count_of_filtered_images = len({o.image_id for o in testset['bboxes'] if o.label.region == 'top'})
+
+        result = response.json()['path']
+        count_of_saved_files = 0
+        for dirpath, dirnames, filenames in os.walk(result):
+            for filename in filenames:
+                if os.path.isfile(os.path.join(dirpath, filename)):
+                    count_of_saved_files += 1
+        assert count_of_saved_files == 2 * count_of_filtered_images + 1, \
+            'exported data should contain as many .jpg and .txt files as number of filtered images and one .yml file'
+
+
 def _insert_file(_client, filename, content):
     response = _client.post('/files', files={'file': (filename, content, 'text/csv')})
     assert response.status_code == 200

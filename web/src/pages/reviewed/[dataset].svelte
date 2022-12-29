@@ -23,6 +23,11 @@
     filteredRegions = target;
   }
 
+  async function exportRegions() {
+    const response = await server.export_labels(dataset)
+    alert(`File saved: ${response.path}`)
+  }
+
   onMount(() => {
     getRegions();
   })
@@ -33,8 +38,11 @@
         <LabelCheckbox regions={allRegions} callback={getTargetRegions}/>
     </div>
     <div class="col-9">
-        <RegionGrid regions={filteredRegions} cursor={cursorGrid} editCallback={getRegions}
-                    reviewedEditable={true}/>
+      <div class="row">
+        <button class="btn btn-success" on:click={exportRegions}>내보내기</button>
+      </div>
+      <RegionGrid regions={filteredRegions} cursor={cursorGrid} editCallback={getRegions}
+                  reviewedEditable={true}/>
     </div>
   </div>
 </div>

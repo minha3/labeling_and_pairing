@@ -88,6 +88,10 @@ class Server extends API {
         headers.append('Content-Type', 'application/json');
         return this.PUT(`${this.apibase}/labels/${labelId}`, JSON.stringify(data), headers)
     }
+
+    export_labels(fileId, filters) {
+        return this.GET(`${this.apibase}/export/${fileId}?${this.join_param({'filters': filters})}`)
+    }
 }
 
 export default Server

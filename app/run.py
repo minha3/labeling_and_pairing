@@ -5,6 +5,7 @@ import uvicorn
 import logging
 
 from typing import Optional
+from datetime import datetime
 from fastapi import FastAPI, Depends, Response
 from fastapi.responses import FileResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -200,6 +201,16 @@ async def update_label(label_id: int, label: schemas.Label, session=Depends(db_m
         raise HTTPException(status_code=400, detail='Resource id in the path and '
                                                     'resource id in the payload is different')
     return await db_manager.update_label(session, label)
+
+
+@app.get('/export/{file_id}')
+@exception_handler
+async def export_labels(file_id: int, filters: dict = Depends(verify_filter), session=Depends(db_manager.get_session)):
+    file = await db_manager.get_file(session, file_id)
+    dirname = f"{file.name.split('.')[0]}_{datetime.utcnow().strftime('%Y-%m-%d-%H-%M-%S')}"
+    data = await db_manager.get_data_to_export(session, file_id, unused=False, reviewed=True, **filters)
+    dirpath = await file_manager.export(dirname, data, label_names_by_type('region'))
+    return {'path': dirpath}
 
 
 if __name__ == '__main__':

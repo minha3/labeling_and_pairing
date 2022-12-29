@@ -1,6 +1,8 @@
 import os
 import shutil
 import time
+import yaml
+import dataclasses
 import unittest
 from string import ascii_lowercase
 from random import choice
@@ -34,6 +36,15 @@ class TestFileManager(unittest.IsolatedAsyncioTestCase):
             f.write('url\n')
             f.write(f'{self.valid_image_url}')
         return file_name
+
+    def get_valid_image_hash(self) -> str:
+        hash_ = '6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32'
+        hash_path = self.file_manager.get_image_file_path(hash_, not_exist_ok=True)
+        os.makedirs(os.path.dirname(hash_path))
+
+        with open(hash_path, 'w') as f:
+            f.write('temporary file')
+        return hash_
 
     def test_create_image_directory(self):
         self.assertFalse(os.path.exists(self.file_manager.image_dir),
@@ -176,12 +187,13 @@ class TestFileManager(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(0, len(r))
 
     def test_get_image_file_path_from_hash(self):
+        self.file_manager.create_all()
+
         hash_ = '6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32'
         hash_dir = os.path.join(self.file_manager.image_dir, hash_[:2])
         os.makedirs(hash_dir)
-        hash_path = os.path.join(hash_dir, hash_)
+        hash_path = os.path.join(hash_dir, f'{hash_}.jpg')
 
-        self.file_manager.create_all()
         with open(hash_path, 'w') as f:
             f.write('temporary file')
 
@@ -197,3 +209,66 @@ class TestFileManager(unittest.IsolatedAsyncioTestCase):
         hash_ = '6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32'
         with self.assertRaises(ParameterNotFoundError):
             self.file_manager.get_image_file_path(hash_)
+
+    async def test_export_images_to_yolo_format(self):
+        self.file_manager.create_all()
+        hash_ = self.get_valid_image_hash()
+
+        @dataclasses.dataclass
+        class Label:
+            region: str
+
+        @dataclasses.dataclass
+        class Region:
+            rx1: float
+            ry1: float
+            rx2: float
+            ry2: float
+            label: Label
+
+        @dataclasses.dataclass
+        class Image:
+            hash: str
+            bboxes: list
+
+        label = Label(region='top')
+        region1 = Region(rx1=0.1, ry1=0.1, rx2=0.3, ry2=0.3, label=label)
+        region2 = Region(rx1=0.4, ry1=0.4, rx2=0.7, ry2=0.7, label=label)
+        image = Image(hash=hash_, bboxes=[region1, region2])
+
+        dirpath = await self.file_manager.export('test_export_yolo', [image, image], ['top'], format_='yolo')
+        files = []
+        for root, dirs, files_ in os.walk(dirpath):
+            for f in files_:
+                files.append(os.path.join(root, f))
+
+        self.assertEqual(5, len(files),
+                         msg='yolo dataset should have one configuration file, one image file and one label file')
+        self.assertEqual(1, len([o for o in files if o.endswith('.yml')]),
+                         msg='yolo dataset should have configuration file to refer to label information')
+        self.assertEqual(2, len([o for o in files if o.endswith('.txt')]),
+                         msg='one annotation file should be created for each image')
+        self.assertEqual(2, len([o for o in files if o.endswith('.jpg')]),
+                         msg='one image file should be created for each image')
+
+        config_file = [o for o in files if o.endswith('.yml')][0]
+        with open(config_file, 'r') as f:
+            config = yaml.safe_load(f)
+        self.assertTrue('nc' in config, msg='configuration file should have number of label names')
+        self.assertEqual(int, type(config['nc']), msg='type of number of label names should be integer')
+        self.assertTrue('names' in config, msg='configuration file should have list of label names')
+
+        annotation_file = [o for o in files if o.endswith('.txt')][0]
+        with open(annotation_file, 'r') as f:
+            for l in f:
+                tokens = l.strip().split(' ')
+                self.assertEqual(5, len(tokens), msg='each annotation should consist of five elements')
+                self.assertTrue(tokens[0].isdigit(), msg='1st element of annotation should be index of label name')
+                self.assertTrue(0.0 <= float(tokens[1]) <= 1.0, msg='2nd element of annotation should be the ratio of '
+                                                                    'center x coordinate value to the width of image')
+                self.assertTrue(0.0 <= float(tokens[2]) <= 1.0, msg='3rd element of annotation should be he ratio of '
+                                                                    'center y coordinate value to the height of image')
+                self.assertTrue(0.0 <= float(tokens[3]) <= 1.0, msg='4th element of annotation should be the ratio of '
+                                                                    'width of bounding box to the width of image')
+                self.assertTrue(0.0 <= float(tokens[4]) <= 1.0, msg='5th element of annotation should be the ratio of '
+                                                                    'height of bounding box to the height of image')

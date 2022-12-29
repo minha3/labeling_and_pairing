@@ -314,6 +314,35 @@ class TestDBManager(unittest.IsolatedAsyncioTestCase):
             label = await self.db_manager.update_label(session, label1)
             self.assertEqual(self.LABEL_BASE3.region, label.region)
 
+    async def test_29_get_data_to_export_without_filter(self):
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+            bboxes = await self.db_manager.insert_bboxes(session, [(image1.id, self.BBOX_BASE1), (image1.id, self.BBOX_BASE3)])
+            await self.db_manager.insert_labels(session, [(bboxes[0].id, self.LABEL_BASE1), (bboxes[1].id, self.LABEL_BASE3)])
+
+            export_data = await self.db_manager.get_data_to_export(session, file1.id)
+            self.assertEqual(1, len(export_data))
+            self.assertEqual(2, len(export_data[0].bboxes))
+
+    async def test_30_get_data_to_export_with_filters(self):
+        self.assertNotEqual(self.LABEL_BASE1.region, self.LABEL_BASE3.region,
+                            msg='The region values of two regions should be different. '
+                                'Because region value is used as filter option')
+        async for session in self.db_manager.get_session():
+            file1 = await self.db_manager.insert_file(session, self.FILE1)
+            images = await self.db_manager.insert_images(session, [self.IMAGE1], file1.id)
+            image1 = images[0]
+            bboxes = await self.db_manager.insert_bboxes(session,
+                                                         [(image1.id, self.BBOX_BASE1), (image1.id, self.BBOX_BASE3)])
+            await self.db_manager.insert_labels(session,
+                                                [(bboxes[0].id, self.LABEL_BASE1), (bboxes[1].id, self.LABEL_BASE3)])
+
+            export_data = await self.db_manager.get_data_to_export(session, file1.id, region='top')
+            self.assertEqual(1, len(export_data))
+            self.assertTrue(o.label.region == 'top' for o in export_data[0].bboxes)
+
 
 if __name__ == '__main__':
     unittest.main(testLoader=unittest.TestLoader())

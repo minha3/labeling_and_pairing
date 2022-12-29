@@ -8,6 +8,7 @@ import PIL.Image
 import shutil
 import string
 import imghdr
+import yaml
 from urllib.parse import urlparse
 from typing import Tuple, Union, List
 from aiocsv import AsyncReader
@@ -16,6 +17,7 @@ from config import load_config
 from common.aiopool import AioTaskPool
 from common.schemas import *
 from common.exceptions import *
+from db.models import Image as DBImage
 
 
 class FileManager:
@@ -28,10 +30,11 @@ class FileManager:
                                  'Alternatively, set the value of environment variable "LAP_PATH_DATA"')
         self.image_dir = os.path.join(data_dir, 'images')
         self.file_dir = os.path.join(data_dir, 'files')
+        self.export_dir = os.path.join(data_dir, 'exports')
         self.csv_fields = ['url']
 
     def create_all(self, drop=False):
-        for target_dir in [self.image_dir, self.file_dir]:
+        for target_dir in [self.image_dir, self.file_dir, self.export_dir]:
             if not os.path.exists(target_dir):
                 os.makedirs(target_dir)
             elif drop:
@@ -39,7 +42,7 @@ class FileManager:
                 os.makedirs(target_dir)
 
     def drop_all(self, create=False):
-        for target_dir in [self.image_dir, self.file_dir]:
+        for target_dir in [self.image_dir, self.file_dir, self.export_dir]:
             if os.path.exists(target_dir):
                 shutil.rmtree(target_dir)
             if create:
@@ -86,9 +89,9 @@ class FileManager:
 
             try:
                 image_hash = hashlib.sha256(image_data).hexdigest()
-                image_dir = os.path.join(self.image_dir, image_hash[:2])
+                image_file = self.get_image_file_path(image_hash, not_exist_ok=True)
+                image_dir = os.path.dirname(image_file)
                 os.makedirs(image_dir, exist_ok=True)
-                image_file = os.path.join(image_dir, image_hash)
                 if not os.path.exists(image_file):
                     async with aiofiles.open(image_file, 'wb') as f:
                         await f.write(image_data)
@@ -137,11 +140,59 @@ class FileManager:
             else:
                 raise e
 
-    def get_image_file_path(self, image_hash: str) -> str:
+    def get_image_file_path(self, image_hash: str, not_exist_ok=False, return_relative=False) -> str:
         if not all(c in string.hexdigits for c in image_hash):
             raise ParameterValueError(key='hash', value=image_hash, should='hex string')
 
-        image_path = os.path.join(self.image_dir, image_hash[:2], image_hash)
-        if os.path.exists(image_path):
-            return image_path
-        raise ParameterNotFoundError(image_hash)
+        relative_path = os.path.join(image_hash[:2], f'{image_hash}.jpg')
+        full_path = os.path.join(self.image_dir, relative_path)
+        if not not_exist_ok and not os.path.exists(full_path):
+            raise ParameterNotFoundError(image_hash)
+
+        if return_relative:
+            return relative_path
+        else:
+            return full_path
+
+    async def export(self, dirname: str, images: List[DBImage], labels: List[str], format_: str = 'yolo') -> Optional[str]:
+        if len(images) < 2:
+            raise ParameterError('Count of reviewed labels should be at least 2 to export.')
+        root_dir = os.path.join(self.export_dir, format_, dirname)
+        os.makedirs(root_dir, exist_ok=True)
+        cnt_train = max(1, int(len(images) * 0.7))
+        idx_range = {'train': range(0, cnt_train), 'val': range(cnt_train, len(images))}
+
+        if format_ == 'yolo':
+            labels_ = {l: i for i, l in enumerate(sorted(labels))}
+            config = {'path': dirname, 'train': None, 'val': None, 'test': '',
+                      'nc': len(labels), 'names': {v: k for k, v in labels_.items()}}
+
+            for usage in ['train', 'val']:
+                label_dir = os.path.join(root_dir, 'labels', usage)
+                rel_image_dir = os.path.join('images', usage)
+                image_dir = os.path.join(root_dir, rel_image_dir)
+                os.makedirs(label_dir, exist_ok=True)
+                os.makedirs(image_dir, exist_ok=True)
+                config[usage] = rel_image_dir
+
+                for i in idx_range[usage]:
+                    image = images[i]
+                    origin_image_path = self.get_image_file_path(image.hash)
+                    rel_origin_image_path = self.get_image_file_path(image.hash, return_relative=True)
+                    target_image_path = os.path.join(image_dir, rel_origin_image_path)
+                    os.makedirs(os.path.dirname(target_image_path), exist_ok=True)
+                    os.symlink(origin_image_path, target_image_path)
+
+                    target_label_path = os.path.join(label_dir, rel_origin_image_path).replace('.jpg', '.txt')
+                    os.makedirs(os.path.dirname(target_label_path), exist_ok=True)
+                    async with aiofiles.open(target_label_path, 'w') as f:
+                        for bbox in image.bboxes:
+                            rwidth, rheight = bbox.rx2 - bbox.rx1, bbox.ry2 - bbox.ry1
+                            await f.write(
+                                f'{labels_[bbox.label.region]} {rwidth / 2 + bbox.rx1} {rheight / 2 + bbox.ry1} '
+                                f'{rwidth} {rheight}\n')
+
+            with open(os.path.join(root_dir, 'configuration.yml'), 'w') as f:
+                yaml.safe_dump(config, f)
+
+        return root_dir

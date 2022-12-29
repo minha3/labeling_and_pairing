@@ -6,7 +6,7 @@ from common import schemas
 from common.exceptions import *
 
 from sqlalchemy import select, true
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 
@@ -189,3 +189,32 @@ class DBManager:
         session.add(db_label)
         await session.commit()
         return db_label
+
+    @staticmethod
+    async def get_data_to_export(session: AsyncSession, file_id: int, **kwargs) -> List[Image]:
+        result = []
+        stmt = select(Image).where(Image.file_id == file_id).options(selectinload(Image.bboxes))
+        stmt = stmt.execution_options(populate_existing=True)
+
+        images = await session.scalars(stmt)
+        for image in images:
+            bboxes = []
+            for bbox in image.bboxes:
+                if bbox.label is None:
+                    continue
+                include = True
+                for k, v in kwargs.items():
+                    if hasattr(bbox.label, k):
+                        if type(v) == list and getattr(bbox.label, k) not in v:
+                            include = False
+                            break
+                        elif type(v) != list and getattr(bbox.label, k) != v:
+                            include = False
+                            break
+                if include:
+                    bboxes.append(bbox)
+            if bboxes:
+                image.bboxes = bboxes
+                result.append(image)
+
+        return result
