@@ -363,14 +363,14 @@ collar:
     - shawl_collar
 top:
   ko:
-   - 상의
-   - 탑
+   region: 상의
+   category: 탑
 outer:
   ko: 아우터
 dress:
   ko:
-   - 원피스
-   - 드레스
+   region: 원피스
+   category: 드레스
 bottom:
   ko: 하의
 street:
@@ -445,8 +445,8 @@ jumper:
   ko: 점퍼
 hoodie:
   ko:
-   - 후드티
-   - 후드
+   category: 후드티
+   neckline: 후드
 jogger_pants:
   ko: 조거팬츠
 down_jacket:
@@ -675,8 +675,8 @@ ankle:
   ko: 발목
 normal:
   ko:
-    - 노말
-    - 노멀
+    center_back_length: 노말
+    fit: 노멀
 long:
   ko: 롱
 midi:

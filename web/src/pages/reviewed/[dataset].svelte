@@ -24,7 +24,7 @@
   }
 
   async function exportRegions() {
-    const response = await server.export_labels(dataset)
+    const response = await server.export(dataset)
     alert(`File saved: ${response.path}`)
   }
 

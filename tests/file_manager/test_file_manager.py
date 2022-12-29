@@ -9,6 +9,7 @@ from random import choice
 
 from common.exceptions import *
 from file_manager import FileManager
+from label import load_labels
 
 
 class TestFileManager(unittest.IsolatedAsyncioTestCase):
@@ -211,12 +212,17 @@ class TestFileManager(unittest.IsolatedAsyncioTestCase):
             self.file_manager.get_image_file_path(hash_)
 
     async def test_export_images_to_yolo_format(self):
+        load_labels()
         self.file_manager.create_all()
         hash_ = self.get_valid_image_hash()
 
         @dataclasses.dataclass
         class Label:
             region: str
+
+            @staticmethod
+            def column_keys():
+                return ['region']
 
         @dataclasses.dataclass
         class Region:
@@ -229,27 +235,31 @@ class TestFileManager(unittest.IsolatedAsyncioTestCase):
         @dataclasses.dataclass
         class Image:
             hash: str
+            width: int
+            height: int
             bboxes: list
 
         label = Label(region='top')
         region1 = Region(rx1=0.1, ry1=0.1, rx2=0.3, ry2=0.3, label=label)
         region2 = Region(rx1=0.4, ry1=0.4, rx2=0.7, ry2=0.7, label=label)
-        image = Image(hash=hash_, bboxes=[region1, region2])
+        image = Image(hash=hash_, width=600, height=600, bboxes=[region1, region2])
 
-        dirpath = await self.file_manager.export('test_export_yolo', [image, image], ['top'], format_='yolo')
+        dirpath = await self.file_manager.export_to_yolo('test_export_yolo', [image, image])
         files = []
         for root, dirs, files_ in os.walk(dirpath):
             for f in files_:
                 files.append(os.path.join(root, f))
 
-        self.assertEqual(5, len(files),
-                         msg='yolo dataset should have one configuration file, one image file and one label file')
+        self.assertEqual(7, len(files),
+                         msg='yolo dataset should have one configuration file, two image file, two bbox file and two label file')
         self.assertEqual(1, len([o for o in files if o.endswith('.yml')]),
                          msg='yolo dataset should have configuration file to refer to label information')
         self.assertEqual(2, len([o for o in files if o.endswith('.txt')]),
-                         msg='one annotation file should be created for each image')
+                         msg='one bbox file should be created for each image')
         self.assertEqual(2, len([o for o in files if o.endswith('.jpg')]),
                          msg='one image file should be created for each image')
+        self.assertEqual(2, len([o for o in files if o.endswith('.pickle')]),
+                         msg='one label file should be created')
 
         config_file = [o for o in files if o.endswith('.yml')][0]
         with open(config_file, 'r') as f:

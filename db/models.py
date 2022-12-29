@@ -43,3 +43,6 @@ class BBox(Base):
 class Label(Base):
     __table__ = label_table
     bbox = relationship("BBox", back_populates="label", lazy="noload")
+
+    def column_keys(self):
+        return self.__table__.columns.keys()

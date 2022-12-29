@@ -9,6 +9,7 @@ import shutil
 import string
 import imghdr
 import yaml
+import pickle
 from urllib.parse import urlparse
 from typing import Tuple, Union, List
 from aiocsv import AsyncReader
@@ -18,6 +19,7 @@ from common.aiopool import AioTaskPool
 from common.schemas import *
 from common.exceptions import *
 from db.models import Image as DBImage
+from label import *
 
 
 class FileManager:
@@ -154,45 +156,64 @@ class FileManager:
         else:
             return full_path
 
-    async def export(self, dirname: str, images: List[DBImage], labels: List[str], format_: str = 'yolo') -> Optional[str]:
+    async def export_to_yolo(self, dirname: str, images: List[DBImage]) -> Optional[str]:
         if len(images) < 2:
             raise ParameterError('Count of reviewed labels should be at least 2 to export.')
-        root_dir = os.path.join(self.export_dir, format_, dirname)
+
+        root_dir = os.path.join(self.export_dir, dirname)
         os.makedirs(root_dir, exist_ok=True)
         cnt_train = max(1, int(len(images) * 0.7))
         idx_range = {'train': range(0, cnt_train), 'val': range(cnt_train, len(images))}
 
-        if format_ == 'yolo':
-            labels_ = {l: i for i, l in enumerate(sorted(labels))}
-            config = {'path': dirname, 'train': None, 'val': None, 'test': '',
-                      'nc': len(labels), 'names': {v: k for k, v in labels_.items()}}
+        labels_ = {l: i for i, l in enumerate(sorted(label_names_by_type('region')))}
+        config = {'path': dirname, 'train': None, 'val': None, 'test': '',
+                  'nc': len(labels_), 'names': {v: k for k, v in labels_.items()}}
 
-            for usage in ['train', 'val']:
-                label_dir = os.path.join(root_dir, 'labels', usage)
-                rel_image_dir = os.path.join('images', usage)
-                image_dir = os.path.join(root_dir, rel_image_dir)
-                os.makedirs(label_dir, exist_ok=True)
-                os.makedirs(image_dir, exist_ok=True)
-                config[usage] = rel_image_dir
+        for usage in ['train', 'val']:
+            bbox_dir = os.path.join(root_dir, 'labels', usage)
+            rel_image_dir = os.path.join('images', usage)
+            image_dir = os.path.join(root_dir, rel_image_dir)
+            label_dir = os.path.join(root_dir, 'annotations', usage)
+            os.makedirs(bbox_dir, exist_ok=True)
+            os.makedirs(image_dir, exist_ok=True)
+            os.makedirs(label_dir, exist_ok=True)
+            config[usage] = rel_image_dir
 
-                for i in idx_range[usage]:
-                    image = images[i]
-                    origin_image_path = self.get_image_file_path(image.hash)
-                    rel_origin_image_path = self.get_image_file_path(image.hash, return_relative=True)
-                    target_image_path = os.path.join(image_dir, rel_origin_image_path)
-                    os.makedirs(os.path.dirname(target_image_path), exist_ok=True)
-                    os.symlink(origin_image_path, target_image_path)
+            labels = []
+            for i in idx_range[usage]:
+                image = images[i]
+                origin_image_path = self.get_image_file_path(image.hash)
+                rel_origin_image_path = self.get_image_file_path(image.hash, return_relative=True)
+                target_image_path = os.path.join(image_dir, rel_origin_image_path)
+                os.makedirs(os.path.dirname(target_image_path), exist_ok=True)
+                os.symlink(origin_image_path, target_image_path)
 
-                    target_label_path = os.path.join(label_dir, rel_origin_image_path).replace('.jpg', '.txt')
-                    os.makedirs(os.path.dirname(target_label_path), exist_ok=True)
-                    async with aiofiles.open(target_label_path, 'w') as f:
-                        for bbox in image.bboxes:
-                            rwidth, rheight = bbox.rx2 - bbox.rx1, bbox.ry2 - bbox.ry1
-                            await f.write(
-                                f'{labels_[bbox.label.region]} {rwidth / 2 + bbox.rx1} {rheight / 2 + bbox.ry1} '
-                                f'{rwidth} {rheight}\n')
+                target_bbox_path = os.path.join(bbox_dir, rel_origin_image_path).replace('.jpg', '.txt')
+                os.makedirs(os.path.dirname(target_bbox_path), exist_ok=True)
+                async with aiofiles.open(target_bbox_path, 'w') as f:
+                    for bbox in image.bboxes:
+                        width, height = image.width, image.height
+                        bwidth, bheight = bbox.rx2 - bbox.rx1, bbox.ry2 - bbox.ry1
+                        await f.write(
+                            f'{labels_[bbox.label.region]} {bwidth / 2 + bbox.rx1} {bheight / 2 + bbox.ry1} '
+                            f'{bwidth} {bheight}\n')
 
-            with open(os.path.join(root_dir, 'configuration.yml'), 'w') as f:
-                yaml.safe_dump(config, f)
+                        label_data = {'path': os.path.join(rel_image_dir, rel_origin_image_path),
+                                      'width': width,
+                                      'height': height,
+                                      'bbox': [int(width * bbox.rx1), int(height * bbox.ry1),
+                                               int(width * bbox.rx2), int(height * bbox.ry2)]}
+                        for label_type in bbox.label.column_keys():
+                            if label_type in label_types():
+                                label_name = getattr(bbox.label, label_type)
+                                label_data[translate(label_type)] = translate(label_name, label_type)
+
+                        labels.append(label_data)
+
+            with open(os.path.join(label_dir, 'annotations.pickle'), 'wb') as f:
+                pickle.dump(labels, f)
+
+        with open(os.path.join(root_dir, 'configuration.yml'), 'w') as f:
+            yaml.safe_dump(config, f)
 
         return root_dir

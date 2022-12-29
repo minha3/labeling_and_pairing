@@ -47,14 +47,14 @@ fabric:
 
 top:
   ko:
-   - 상의
-   - 탑
+   region: 상의
+   category: 탑
 outer:
   ko: 아우터
 dress:
   ko:
-   - 원피스
-   - 드레스
+   region: 원피스
+   category: 드레스
 bottom:
   ko: 하의
 pants:

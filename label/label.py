@@ -31,12 +31,21 @@ class Label:
                 self._translator[_k] = _v
 
         for k, v in self._labels.items():
-            if type(v['ko']) == list:
-                for _v in v['ko']:
+            if type(v['ko']) == dict:
+                for _k, _v in v['ko'].items():
                     update_translator(_v, k)
+                    """
+                    top:
+                      ko:
+                       region: 상의
+                       category: 탑
+                    in the above case, in order to translate (top, region) to 상의
+                    and translate (top, category) to 탑
+                    """
+                    self._translator[(k, _k)] = _v
             else:
                 update_translator(v['ko'], k)
-            self._translator[k] = v['ko']
+                self._translator[k] = v['ko']
 
     def _set_label_types(self):
         self._label_types = [k for k, v in self._labels.items() if 'labels' in v]
@@ -52,12 +61,16 @@ class Label:
         return self._label_types
 
     def translate(self, v, v_type=None):
-        r = self._translator.get(v)
-        r_type = self._translator.get(v_type)
-        if type(r) == list and r_type:
-            for _r in r:
-                if _r in self._labels[r_type]['labels']:
-                    return _r
+        r = None
+        if v_type:
+            r = self._translator.get((v, v_type))
+        if r is None:
+            r = self._translator.get(v)
+            r_type = self._translator.get(v_type)
+            if type(r) == list and r_type and r_type in self._labels:
+                for _r in r:
+                    if _r in self._labels[r_type]['labels']:
+                        return _r
         return r
 
     def label_names_by_type(self, label_type=None):

@@ -25,7 +25,7 @@ class TestDBManager(unittest.IsolatedAsyncioTestCase):
         self.LABEL_BASE2 = schemas.LabelBase(**self.db_data['label2'])
         self.LABEL_BASE3 = schemas.LabelBase(**self.db_data['label3'])
 
-        load_labels(my_dir)
+        load_labels()
         self.db_manager = DBManager(db_config={'dialect': 'sqlite',
                                                'driver': 'aiosqlite',
                                                'dbname': './test_db_manager.db'})

@@ -23,7 +23,7 @@ class TestInferenceClient(unittest.IsolatedAsyncioTestCase):
                          'width': 600, 'height': 600,
                          'url': 'test url'}
         self.db_image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pre_downloaded_images',
-                                          self.db_image['hash'][:2], self.db_image['hash'])
+                                          self.db_image['hash'][:2], f"{self.db_image['hash']}.jpg")
 
     async def test_ping_client_with_no_config(self):
         client = InferenceClient()

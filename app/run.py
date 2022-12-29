@@ -205,11 +205,11 @@ async def update_label(label_id: int, label: schemas.Label, session=Depends(db_m
 
 @app.get('/export/{file_id}')
 @exception_handler
-async def export_labels(file_id: int, filters: dict = Depends(verify_filter), session=Depends(db_manager.get_session)):
+async def export(file_id: int, filters: dict = Depends(verify_filter), session=Depends(db_manager.get_session)):
     file = await db_manager.get_file(session, file_id)
     dirname = f"{file.name.split('.')[0]}_{datetime.utcnow().strftime('%Y-%m-%d-%H-%M-%S')}"
     data = await db_manager.get_data_to_export(session, file_id, unused=False, reviewed=True, **filters)
-    dirpath = await file_manager.export(dirname, data, label_names_by_type('region'))
+    dirpath = await file_manager.export_to_yolo(dirname, data)
     return {'path': dirpath}
 
 

@@ -193,13 +193,14 @@ def test_export_file_to_yolo_data_format():
 
         count_of_filtered_images = len({o.image_id for o in testset['bboxes']})
         result = response.json()['path']
-        count_of_saved_files = 0
+
+        count_of_saved_images = 0
         for dirpath, dirnames, filenames in os.walk(result):
             for filename in filenames:
-                if os.path.isfile(os.path.join(dirpath, filename)):
-                    count_of_saved_files += 1
-        assert count_of_saved_files == 2 * count_of_filtered_images + 1, \
-            'exported data should contain as many .jpg and .txt files as number of images and one .yml file'
+                if filename.endswith('.jpg') and os.path.isfile(os.path.join(dirpath, filename)):
+                    count_of_saved_images += 1
+        assert count_of_saved_images == count_of_filtered_images, \
+            'exported data should contain as many .jpg files as number of images'
 
 
 def test_export_file_to_yolo_data_format_with_filters():
@@ -214,13 +215,14 @@ def test_export_file_to_yolo_data_format_with_filters():
         count_of_filtered_images = len({o.image_id for o in testset['bboxes'] if o.label.region == 'top'})
 
         result = response.json()['path']
-        count_of_saved_files = 0
+
+        count_of_saved_images = 0
         for dirpath, dirnames, filenames in os.walk(result):
             for filename in filenames:
-                if os.path.isfile(os.path.join(dirpath, filename)):
-                    count_of_saved_files += 1
-        assert count_of_saved_files == 2 * count_of_filtered_images + 1, \
-            'exported data should contain as many .jpg and .txt files as number of filtered images and one .yml file'
+                if filename.endswith('.jpg') and os.path.isfile(os.path.join(dirpath, filename)):
+                    count_of_saved_images += 1
+        assert count_of_saved_images == count_of_filtered_images, \
+            'exported data should contain as many .jpg as number of filtered images'
 
 
 def _insert_file(_client, filename, content):
