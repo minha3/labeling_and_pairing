@@ -87,7 +87,7 @@ files:
             rx2: 0.764444
             ry2: 0.655556
             label:
-              region: top
+              region: outer
               style: street
       - hash: a55e9a9573374aa5ad9f51b1a06a58e1ac30fdecf2bc7f6d088848e33fc9acb4
         width: 500
@@ -99,7 +99,7 @@ files:
             rx2: 0.89
             ry2: 0.684
             label:
-              region: top
+              region: dress
               style: street
       - hash: 42bc6e2703de5161083d9b3e0b58232f3519ff36952f823f30bef6255fcdb212
         width: 800
@@ -116,7 +116,7 @@ files:
             rx2: 0.85625
             ry2: 0.78625
             label:
-              region: top
+              region: bottom
               style: street
   - name: test_file2.csv
     size: 748

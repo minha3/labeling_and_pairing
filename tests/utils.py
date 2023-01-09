@@ -7,19 +7,24 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from db.models import *
 from common import schemas
 
-with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lap_config.yml'), 'r') as f:
-    test_config = yaml.load(f, Loader=yaml.SafeLoader)
-
-SQLALCHEMY_DATABASE_URL = "{dialect}+{driver}:///{dbname}".format(**test_config['db'])
-DB_ENGINE = create_async_engine(SQLALCHEMY_DATABASE_URL)
-DB_SESSION = sessionmaker(bind=DB_ENGINE, expire_on_commit=False, class_=AsyncSession)
+MY_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-async def insert_testset():
-    my_dir = os.path.dirname(os.path.realpath(__file__))
-    shutil.copytree(os.path.join(my_dir, '../pre_downloaded_images'), os.path.join(my_dir, 'images'), dirs_exist_ok=True)
-    async with DB_SESSION() as session:
-        with open(os.path.join(my_dir, 'db_data.yml'), 'r') as f:
+def insert_image_files(dirname=None):
+    if dirname is None:
+        dirname = os.environ.get('LAP_PATH_DATA')
+    shutil.copytree(os.path.join(MY_DIR, 'pre_downloaded_images'), os.path.join(dirname, 'images'),
+                    dirs_exist_ok=True)
+
+
+async def insert_db_data(dbname=None):
+    if dbname is None:
+        dbname = os.environ.get('LAP_DB_DBNAME')
+    sqlalchemy_database_url = f"sqlite+aiosqlite:///{dbname}"
+    db_engine = create_async_engine(sqlalchemy_database_url)
+    db_session = sessionmaker(bind=db_engine, expire_on_commit=False, class_=AsyncSession)
+    async with db_session() as session:
+        with open(os.path.join(MY_DIR, 'db_data.yml'), 'r') as f:
             test_data = yaml.load(f, Loader=yaml.SafeLoader)
         result = []
         for file in test_data['files']:

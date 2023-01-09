@@ -6,11 +6,15 @@ import PIL.Image
 from collections import Counter
 from fastapi.testclient import TestClient
 
-os.environ['LAP_PATH_CONFIG'] = os.path.dirname(os.path.realpath(__file__))
 os.environ['LAP_PATH_DATA'] = os.path.dirname(os.path.realpath(__file__))
+os.environ['LAP_DB_DIALECT'] = 'sqlite'
+os.environ['LAP_DB_DRIVER'] = 'aiosqlite'
+os.environ['LAP_DB_DBNAME'] = './test_app.db'
+os.environ['LAP_CLEAR'] = 'true'
+os.environ['LAP_INFERENCE_ENABLED'] = 'false'
 
 from app.run import app, file_manager
-from tests.app.utils import insert_testset
+from tests.utils import insert_db_data, insert_image_files
 
 
 # Set a valid image url to test some test cases
@@ -74,13 +78,14 @@ def test_insert_file():
 # Test cases for image runs after inserting temporary data into database and copying image files to image directory
 def test_insert_datasets():
     with TestClient(app) as client:
-        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
         assert len(testsets) > 0
 
 
 def test_get_images():
     with TestClient(app) as client:
-        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        insert_image_files()
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
         assert len(testsets) > 0
         testset = testsets[0]
         response = client.get('/images', params={'file_id': testset['file'].id})
@@ -91,7 +96,8 @@ def test_get_images():
 
 def test_get_image():
     with TestClient(app) as client:
-        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        insert_image_files()
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
         assert len(testsets) > 0
         testset = testsets[0]
         response = client.get(f"/images/{testset['images'][0].id}")
@@ -106,7 +112,7 @@ def test_get_image():
 
 def test_get_bboxes_from_file():
     with TestClient(app) as client:
-        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
         assert len(testsets) > 0
         testset = testsets[0]
 
@@ -118,7 +124,7 @@ def test_get_bboxes_from_file():
 
 def test_get_bboxes_from_image():
     with TestClient(app) as client:
-        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
         assert len(testsets) > 0
         testset = testsets[0]
 
@@ -132,7 +138,7 @@ def test_get_bboxes_from_image():
 
 def test_update_label_as_unused():
     with TestClient(app) as client:
-        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
         assert len(testsets) > 0
         testset = testsets[0]
 
@@ -158,7 +164,7 @@ def test_update_label_as_unused():
 
 def test_update_label_as_reviewed():
     with TestClient(app) as client:
-        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
         assert len(testsets) > 0
         testset = testsets[0]
 
@@ -184,7 +190,8 @@ def test_update_label_as_reviewed():
 
 def test_export_file_to_yolo_data_format():
     with TestClient(app) as client:
-        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        insert_image_files()
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
         assert len(testsets) > 1
         testset = testsets[1]
 
@@ -205,7 +212,8 @@ def test_export_file_to_yolo_data_format():
 
 def test_export_file_to_yolo_data_format_with_filters():
     with TestClient(app) as client:
-        testsets = asyncio.get_event_loop().run_until_complete(insert_testset())
+        insert_image_files()
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
         assert len(testsets) > 1
         testset = testsets[1]
 
