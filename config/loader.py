@@ -19,4 +19,10 @@ def load_envs(config, prefix):
         if type(v) == dict:
             load_envs(config=v, prefix=f'{prefix}_{k}')
         else:
-            config[k] = os.environ.get(f'{prefix}_{k}'.upper(), v)
+            v_ = os.environ.get(f'{prefix}_{k}'.upper(), v)
+            if v_ == 'true':
+                config[k] = True
+            elif v_ == 'false':
+                config[k] = False
+            else:
+                config[k] = v_

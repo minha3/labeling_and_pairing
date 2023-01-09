@@ -31,6 +31,30 @@ class TestConfigLoader(unittest.TestCase):
         # clear
         os.environ.pop(env_key)
 
+    def test_read_envs_true(self):
+        env_key = 'LAP_UNITTEST_KEY1'
+        env_val = 'true'
+
+        os.environ.update({env_key: env_val})
+        conf = load_config(dirname=self.config_dir)
+        self.assertIs(type(conf), dict)
+        self.assertTrue(conf['unittest']['key1'])
+
+        # clear
+        os.environ.pop(env_key)
+
+    def test_read_envs_false(self):
+        env_key = 'LAP_UNITTEST_KEY1'
+        env_val = 'false'
+
+        os.environ.update({env_key: env_val})
+        conf = load_config(dirname=self.config_dir)
+        self.assertIs(type(conf), dict)
+        self.assertFalse(conf['unittest']['key1'])
+
+        # clear
+        os.environ.pop(env_key)
+
     def test_ignore_envs(self):
         env_key = 'LAP_UNITTEST_KEY2'
         env_val = ''.join(choice(ascii_lowercase) for _ in range(8))
