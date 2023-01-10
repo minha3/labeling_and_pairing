@@ -1,198 +1,261 @@
 import unittest
-from string import ascii_lowercase, hexdigits
-from random import choice, uniform
-
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.exc import IntegrityError
-
-from common import schemas
-from common.exceptions import *
-from tests.utils import insert_db_data
-from label import load_labels, label_names_by_type
+from ..database import create_database, dispose_database, get_session, remove_session
+from ..factories import FileFactory, ImageFactory, BBoxFactory, LabelFactory
 from db import DBManager
+from common import schemas
+from common.exceptions import ParameterNotFoundError
 
 
 class TestDBManager(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
-        self.FILE_CREATE1 = schemas.FileCreate(name=''.join(choice(ascii_lowercase) for _ in range(8)),
-                                               size=10)
-        self.IMAGE_CREATE1 = schemas.ImageCreate(hash=''.join(choice(hexdigits) for _ in range(64)),
-                                                 width=600, height=600, url='test_url1')
-        self.BBOX_BASE1 = schemas.BBoxBase(rx1=uniform(0, 0.5), ry1=uniform(0, 0.5),
-                                           rx2=uniform(0.5, 1.0), ry2=uniform(0.5, 1.0))
-        self.LABEL_BASE1 = schemas.LabelBase(region='top', category='top', fabric='padded')
-
-        load_labels()
-        db_config = {'dialect': 'sqlite', 'driver': 'aiosqlite', 'dbname': './test_db_manager.db'}
-        self.db_manager = DBManager(db_config=db_config)
-        await self.db_manager.create_all(drop=True)
-        self.DB_DATA = await insert_db_data(db_config['dbname'])
+        self.engine = create_async_engine('sqlite+aiosqlite:///./test_db_manager.db')
+        await create_database(self.engine)
+        self.session = get_session(self.engine)
 
     async def asyncTearDown(self) -> None:
-        await self.db_manager.drop_all()
-        await self.db_manager.close()
+        await remove_session(self.session)
+        await dispose_database(self.engine)
 
     async def test_insert_file(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.insert_file(session, self.FILE_CREATE1)
-            self.assertIsNotNone(r)
+        file = FileFactory.build()
+        r = await DBManager.insert_file(self.session, schemas.FileCreate(name=file.name, size=file.size))
+        self.assertIsNotNone(r)
+        self.assertIsNotNone(r.id)
 
     async def test_insert_duplicate_filename(self):
-        async for session in self.db_manager.get_session():
-            with self.assertRaises(IntegrityError, msg='Inserting a file with a duplicate name results in an error'):
-                await self.db_manager.insert_file(session, self.DB_DATA[0]['file'])
+        file = FileFactory()
+        with self.assertRaises(IntegrityError,
+                               msg='Inserting a file with a duplicate name results in an error'):
+            await DBManager.insert_file(self.session, schemas.FileCreate(name=file.name, size=file.size))
 
     async def test_get_existent_file(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.get_file(session, self.DB_DATA[0]['file'].id)
-            self.assertIsNotNone(r)
-            self.assertIsNotNone(schemas.File.from_orm(r))
+        file = FileFactory()
+        r = await DBManager.get_file(self.session, file.id)
+        self.assertEqual(file.id, r.id)
 
     async def test_get_non_existent_file(self):
-        async for session in self.db_manager.get_session():
-            with self.assertRaises(ParameterNotFoundError):
-                await self.db_manager.get_file(session, int(1e9))
+        with self.assertRaises(ParameterNotFoundError):
+            await DBManager.get_file(self.session, int(1e9))
 
     async def test_get_non_existent_file_silently(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.get_file(session, int(1e9), silent=True)
-            self.assertIsNone(r)
+        r = await DBManager.get_file(self.session, int(1e9), silent=True)
+        self.assertIsNone(r)
 
     async def test_insert_images(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.insert_images(session, [self.IMAGE_CREATE1], self.DB_DATA[0]['file'].id)
-            self.assertEqual(1, len(r))
+        file = FileFactory()
+        image = ImageFactory.build()
+        r = await DBManager.insert_images(self.session,
+                                          [schemas.ImageCreate(
+                                              hash=image.hash, width=image.width, height=image.height, url=image.url)],
+                                          file_id=file.id)
+        self.assertEqual(1, len(r))
+        self.assertIsNotNone(r[0].id)
+        self.assertIsNotNone(r[0].file_id)
 
     async def test_insert_duplicate_imagehash_on_same_file(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.insert_images(session, self.DB_DATA[0]['images'], self.DB_DATA[0]['file'].id)
-            self.assertEqual(0, len(r), msg='Inserting an image with a duplicate hash on same file should be ignored silently')
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        r = await DBManager.insert_images(self.session,
+                                          [schemas.ImageCreate(
+                                              hash=image.hash, width=image.width, height=image.height, url=image.url)],
+                                          file_id=image.file_id)
+        self.assertEqual(0, len(r),
+                         msg='Inserting an image with a duplicate hash on same file should be ignored silently')
 
     async def test_insert_duplicate_imagehash_on_other_files(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.insert_images(session, self.DB_DATA[0]['images'], self.DB_DATA[1]['file'].id)
-            self.assertEqual(0, len(r), msg='Inserting an image with a duplicate hash on other files should be ignored silently')
+        file1 = FileFactory()
+        file2 = FileFactory()
+        image = ImageFactory(file=file1)
+        r = await DBManager.insert_images(self.session,
+                                          [schemas.ImageCreate(
+                                              hash=image.hash, width=image.width, height=image.height, url=image.url)],
+                                          file_id=file2.id)
+        self.assertEqual(0, len(r),
+                         msg='Inserting an image with a duplicate hash on other files should be ignored silently')
 
     async def test_get_existent_images(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.get_images(session, self.DB_DATA[0]['file'].id)
-            self.assertGreaterEqual(len(r), 1)
-            self.assertIsNotNone(schemas.Image.from_orm(r[0]))
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        r = await DBManager.get_images(self.session, file_id=image.file_id)
+        self.assertEqual(1, len(r))
+        self.assertEqual(image.id, r[0].id)
+
+    async def test_get_image(self):
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        r = await DBManager.get_image(self.session, image_id=image.id)
+        self.assertIsNotNone(r)
 
     async def test_get_non_existent_image(self):
-        async for session in self.db_manager.get_session():
-            with self.assertRaises(ParameterNotFoundError):
-                await self.db_manager.get_image(session, int(1e9))
+        with self.assertRaises(ParameterNotFoundError):
+            await DBManager.get_image(self.session, int(1e9))
 
     async def test_get_non_existent_image_silently(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.get_image(session, int(1e9), silent=True)
-            self.assertIsNone(r)
+        r = await DBManager.get_image(self.session, int(1e9), silent=True)
+        self.assertIsNone(r)
 
     async def test_delete_image_automatically_in_cascade(self):
-        async for session in self.db_manager.get_session():
-            await self.db_manager.delete_file(session, self.DB_DATA[0]['file'].id)
-            with self.assertRaises(ParameterNotFoundError,
-                                   msg='Images should be automatically deleted when a related file is deleted'):
-                await self.db_manager.get_image(session, self.DB_DATA[0]['images'][0].id)
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        await DBManager.delete_file(self.session, file_id=image.file_id)
+        r = await DBManager.get_images(self.session, file_id=image.file_id)
+        self.assertEqual(0, len(r))
+        with self.assertRaises(ParameterNotFoundError,
+                               msg='Images should be automatically deleted when a related file is deleted'):
+            await DBManager.get_image(self.session, image_id=image.id)
 
     async def test_insert_bboxes(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.insert_bboxes(session, [(self.DB_DATA[0]['images'][0].id, self.BBOX_BASE1)])
-            self.assertEqual(1, len(r))
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox = BBoxFactory.build()
+        r = await DBManager.insert_bboxes(self.session,
+                                          pairs=[(image.id,
+                                                  schemas.BBoxBase(rx1=bbox.rx1, ry1=bbox.ry1,
+                                                                   rx2=bbox.rx2, ry2=bbox.ry2))])
+        self.assertEqual(1, len(r))
+        self.assertIsNotNone(r[0].id)
+        self.assertIsNotNone(r[0].image_id)
 
     async def test_get_bboxes_with_image_id(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.get_bboxes(session, image_id=self.DB_DATA[0]['images'][0].id)
-            self.assertEqual(1, len(r))
-            o = schemas.BBox.from_orm(r[0])
-            self.assertIsNotNone(o)
-            self.assertIsNotNone(o.label)
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox = BBoxFactory(image=image)
+        r = await DBManager.get_bboxes(self.session, image_id=bbox.image_id)
+        self.assertEqual(1, len(r))
+        self.assertEqual(bbox.id, r[0].id)
 
     async def test_get_bboxes_with_file_id(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.get_bboxes(session, self.DB_DATA[0]['file'].id)
-            self.assertEqual(1, len(r))
-            o = schemas.BBox.from_orm(r[0])
-            self.assertIsNotNone(o)
-            self.assertIsNotNone(o.label)
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox = BBoxFactory(image=image)
+        r = await DBManager.get_bboxes(self.session, file_id=file.id)
+        self.assertEqual(1, len(r))
+        self.assertEqual(bbox.id, r[0].id)
 
     async def test_delete_bbox_automatically_in_cascade(self):
-        async for session in self.db_manager.get_session():
-            await self.db_manager.delete_file(session, self.DB_DATA[0]['file'].id)
-            with self.assertRaises(ParameterNotFoundError,
-                                   msg='BBoxes should be automatically deleted when a related file is deleted'):
-                await self.db_manager.get_bbox(session, self.DB_DATA[0]['bboxes'][0].id)
-
-            r = await self.db_manager.get_bboxes(session, file_id=self.DB_DATA[0]['file'].id)
-            self.assertEqual(0, len(r),
-                             msg='BBoxes should be automatically deleted when a related file is deleted')
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox = BBoxFactory(image=image)
+        r = await DBManager.get_bbox(self.session, bbox.id)
+        self.assertIsNotNone(r)
+        await DBManager.delete_file(self.session, file_id=file.id)
+        with self.assertRaises(ParameterNotFoundError,
+                               msg='BBoxes should be automatically deleted when a related file is deleted'):
+            await DBManager.get_bbox(self.session, bbox.id)
 
     async def test_insert_labels(self):
-        async for session in self.db_manager.get_session():
-            bboxes = await self.db_manager.insert_bboxes(session, [(self.DB_DATA[0]['images'][0].id, self.BBOX_BASE1)])
-            bbox1 = bboxes[0]
-            self.assertIsNotNone(bbox1)
-
-            r = await self.db_manager.insert_labels(session, [(bbox1.id, self.LABEL_BASE1)])
-            self.assertEqual(1, len(r))
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox = BBoxFactory(image=image)
+        label = LabelFactory.build()
+        r = await DBManager.insert_labels(self.session,
+                                          pairs=[(bbox.id,
+                                                  schemas.LabelBase(region=label.region,
+                                                                    style=label.style,
+                                                                    category=label.category,
+                                                                    fabric=label.fabric))])
+        self.assertEqual(1, len(r))
+        self.assertIsNotNone(r[0].id)
+        self.assertIsNotNone(r[0].bbox_id)
 
     async def test_get_bbox_with_label(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.get_bbox(session, bbox_id=self.DB_DATA[0]['bboxes'][0].id)
-            self.assertIsNotNone(r)
-            self.assertIsNotNone(r.label)
-            self.assertIsNotNone(r.label.region)
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox = BBoxFactory(image=image)
+        label = LabelFactory(bbox=bbox)
+        r = await DBManager.get_bbox(self.session, bbox_id=bbox.id)
+        self.assertIsNotNone(r)
+        self.assertIsNotNone(r.label)
+        self.assertEqual(label.id, r.label.id)
 
     async def test_get_bboxes_with_label(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.get_bboxes(session, file_id=self.DB_DATA[0]['file'].id)
-            self.assertGreaterEqual(len(r), 1)
-            self.assertIsNotNone(r[0].label)
-            self.assertIsNotNone(r[0].label.region)
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox = BBoxFactory(image=image)
+        label = LabelFactory(bbox=bbox)
+        r = await DBManager.get_bboxes(self.session, file_id=file.id)
+        self.assertEqual(1, len(r))
+        self.assertIsNotNone(r[0].label)
+        self.assertEqual(label.id, r[0].label.id)
 
     async def test_get_bboxes_with_filters(self):
-        async for session in self.db_manager.get_session():
-            answer = len([o for o in self.DB_DATA[0]['bboxes'] if not o.label.unused])
-            r = await self.db_manager.get_bboxes(session, file_id=self.DB_DATA[0]['file'].id, unused=False)
-            self.assertEqual(answer, len(r))
-
-            answer = len([o for o in self.DB_DATA[0]['bboxes'] if o.label.reviewed])
-            r = await self.db_manager.get_bboxes(session, file_id=self.DB_DATA[0]['file'].id, reviewed=True)
-            self.assertEqual(answer, len(r))
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox1 = BBoxFactory(image=image)
+        LabelFactory(unused=False, reviewed=False, bbox=bbox1)
+        bbox2 = BBoxFactory(image=image)
+        LabelFactory(unused=True, reviewed=True, bbox=bbox2)
+        r = await DBManager.get_bboxes(self.session, file_id=file.id, unused=False)
+        self.assertEqual(1, len(r))
+        self.assertEqual(bbox1.id, r[0].id)
+        self.assertFalse(r[0].label.unused)
+        r = await DBManager.get_bboxes(self.session, file_id=file.id, reviewed=True)
+        self.assertEqual(1, len(r))
+        self.assertEqual(bbox2.id, r[0].id)
+        self.assertTrue(r[0].label.reviewed)
 
     async def test_get_existent_label(self):
-        async for session in self.db_manager.get_session():
-            r = await self.db_manager.get_label(session, self.DB_DATA[0]['bboxes'][0].label.id)
-            self.assertIsNotNone(r)
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox = BBoxFactory(image=image)
+        label = LabelFactory(unused=False, reviewed=False, bbox=bbox)
+
+        r = await DBManager.get_label(self.session, label_id=label.id)
+        self.assertIsNotNone(r)
 
     async def testget_non_existent_label(self):
-        async for session in self.db_manager.get_session():
-            with self.assertRaises(ParameterNotFoundError):
-                await self.db_manager.get_label(session, int(1e9))
+        with self.assertRaises(ParameterNotFoundError):
+            await DBManager.get_label(self.session, int(1e9))
 
     async def test_update_label(self):
-        async for session in self.db_manager.get_session():
-            old = self.DB_DATA[0]['bboxes'][0].label.region
-            for l in label_names_by_type('region'):
-                if l != self.DB_DATA[0]['bboxes'][0].label.region:
-                    self.DB_DATA[0]['bboxes'][0].label.region = l
-                    break
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox = BBoxFactory(image=image)
+        label1 = LabelFactory(bbox=bbox)
+        unused = not label1.unused
+        reviewed = not label1.reviewed
 
-            label = await self.db_manager.update_label(session, self.DB_DATA[0]['bboxes'][0].label)
-            self.assertNotEqual(old, label.region)
+        r = await DBManager.update_label(self.session, schemas.Label(id=label1.id,
+                                                                     bbox_id=bbox.id,
+                                                                     region=label1.region,
+                                                                     style=label1.style,
+                                                                     category=label1.category,
+                                                                     fabric=label1.fabric,
+                                                                     unused=unused,
+                                                                     reviewed=reviewed))
+        self.assertIsNotNone(r)
+        self.assertEqual(unused, r.unused)
+        self.assertEqual(reviewed, r.reviewed)
 
     async def test_get_data_to_export_without_filter(self):
-        async for session in self.db_manager.get_session():
-            answer = len({o.image_id for o in self.DB_DATA[0]['bboxes']})
-            export_data = await self.db_manager.get_data_to_export(session, self.DB_DATA[0]['file'].id)
-            self.assertEqual(answer, len(export_data))
+        file = FileFactory()
+        image1 = ImageFactory(file=file)
+        bbox1 = BBoxFactory(image=image1)
+        label1 = LabelFactory(unused=False, reviewed=False, bbox=bbox1)
+        bbox2 = BBoxFactory(image=image1)
+        label2 = LabelFactory(unused=False, reviewed=True, bbox=bbox2)
+        image2 = ImageFactory(file=file)
+        bbox3 = BBoxFactory(image=image2)
+        label3 = LabelFactory(unused=False, reviewed=False, bbox=bbox3)
+        r = await DBManager.get_data_to_export(self.session, file_id=file.id)
+        self.assertEqual(2, len(r), msg='should be equal to the number of images')
+        self.assertEqual(2, len(r[0].bboxes), msg='should be equal to the number of bboxes of image1')
 
     async def test_get_data_to_export_with_filters(self):
-        async for session in self.db_manager.get_session():
-            answer = len({o.image_id for o in self.DB_DATA[0]['bboxes'] if o.label.region == 'top'})
-            export_data = await self.db_manager.get_data_to_export(session, self.DB_DATA[0]['file'].id,
-                                                                   region='top')
-            self.assertEqual(answer, len(export_data))
+        file = FileFactory()
+        image1 = ImageFactory(file=file)
+        bbox1 = BBoxFactory(image=image1)
+        label1 = LabelFactory(unused=False, reviewed=False, bbox=bbox1)
+        bbox2 = BBoxFactory(image=image1)
+        label2 = LabelFactory(unused=False, reviewed=True, bbox=bbox2)
+        image2 = ImageFactory(file=file)
+        bbox3 = BBoxFactory(image=image2)
+        label3 = LabelFactory(unused=False, reviewed=False, bbox=bbox3)
+        r = await DBManager.get_data_to_export(self.session, file_id=file.id, unused=False, reviewed=True)
+        self.assertEqual(1, len(r), msg='should not include images with bboxes that are reviewed=False')
+        self.assertEqual(1, len(r[0].bboxes), msg='should not include bboxes that are reviewed=False')
 
 
 if __name__ == '__main__':
