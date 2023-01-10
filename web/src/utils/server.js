@@ -79,8 +79,8 @@ class Server extends API {
         return`${this.apibase}/images/${imageId}`
     }
 
-    get_bboxes_from_file(fileId, params) {
-        return this.GET(`${this.apibase}/bboxes?file_id=${fileId}${this.join_param(params)}`)
+    get_bboxes_from_file(fileId, filters) {
+        return this.GET(`${this.apibase}/bboxes?file_id=${fileId}${this.join_param({'filters': filters})}`)
     }
 
     update_label(labelId, data) {

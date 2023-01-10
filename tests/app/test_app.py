@@ -150,12 +150,12 @@ def test_update_label_as_unused():
         result = response.json()
         assert result['unused'] is True
 
-        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'unused': True})
+        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'filters': 'unused=true'})
         assert response.status_code == 200
         result = response.json()
         assert len(result) == 1
 
-        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'unused': False})
+        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'filters': 'unused=false'})
         assert response.status_code == 200
         result = response.json()
         assert len(result) == len(testset['bboxes']) - 1, \
@@ -176,12 +176,12 @@ def test_update_label_as_reviewed():
         result = response.json()
         assert result['reviewed'] is True
 
-        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'reviewed': True})
+        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'filters': 'reviewed=true'})
         assert response.status_code == 200
         result = response.json()
         assert len(result) == 1
 
-        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'reviewed': False})
+        response = client.get('/bboxes', params={'file_id': testset['file'].id, 'filters': 'reviewed=false'})
         assert response.status_code == 200
         result = response.json()
         assert len(result) == len(testset['bboxes']) - 1, \
@@ -217,10 +217,13 @@ def test_export_file_to_yolo_data_format_with_filters():
         assert len(testsets) > 1
         testset = testsets[1]
 
-        response = client.get(f"/export/{testset['file'].id}", params={'filters': 'region=top'})
+        response = client.get(f"/export/{testset['file'].id}", params={'filters': ['region=top',
+                                                                                   'unused=false',
+                                                                                   'reviewed=true']})
         assert response.status_code == 200
 
-        count_of_filtered_images = len({o.image_id for o in testset['bboxes'] if o.label.region == 'top'})
+        count_of_filtered_images = len({o.image_id for o in testset['bboxes']
+                                        if o.label.region == 'top' and not o.label.unused and o.label.reviewed})
 
         result = response.json()['path']
 

@@ -24,7 +24,7 @@
   }
 
   async function exportRegions() {
-    const response = await server.export(dataset)
+    const response = await server.export(dataset, {'unused': false, 'reviewed': true})
     alert(`File saved: ${response.path}`)
   }
 

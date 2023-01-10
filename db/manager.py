@@ -127,21 +127,21 @@ class DBManager:
         return result
 
     @staticmethod
-    async def get_bboxes(session: AsyncSession, image_id: int = None, file_id: int = None, **kwargs) -> List[BBox]:
+    async def get_bboxes(session: AsyncSession, image_id: int = None, file_id: int = None,
+                         label_filter: schemas.LabelFilter = None) -> List[BBox]:
         stmt = select(BBox).options(selectinload(BBox.image)).execution_options(populate_existing=True)
         if image_id:
             stmt = stmt.where(BBox.image_id == image_id)
         elif file_id:
             stmt = stmt.join(Image).where(Image.file_id == file_id)
 
-        if kwargs:
+        if label_filter:
             stmt = stmt.join(Label)
-            for k, v in kwargs.items():
-                if v is not None and hasattr(Label, k):
-                    if type(v) == list:
-                        stmt = stmt.where(getattr(Label, k).in_(v))
-                    else:
-                        stmt = stmt.where(getattr(Label, k) == v)
+            for k, v in label_filter.dict(exclude_unset=True, exclude_none=True).items():
+                if type(v) == list:
+                    stmt = stmt.where(getattr(Label, k).in_(v))
+                else:
+                    stmt = stmt.where(getattr(Label, k) == v)
 
         return list(await session.scalars(stmt))
 

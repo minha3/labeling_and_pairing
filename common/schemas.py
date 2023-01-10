@@ -1,6 +1,6 @@
 # reference: https://fastapi.tiangolo.com/tutorial/sql-databases/?h=orm_mode#use-pydantics-orm_mode
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -73,6 +73,23 @@ class Label(LabelBase):
 
     class Config:
         orm_mode = True
+
+
+class LabelFilter(BaseModel):
+    region: Optional[List[str]]
+    style: Optional[List[str]]
+    category: Optional[List[str]]
+    fabric: Optional[List[str]]
+    print: Optional[List[str]]
+    detail: Optional[List[str]]
+    color: Optional[List[str]]
+    center_back_length: Optional[List[str]]
+    sleeve_length: Optional[List[str]]
+    neckline: Optional[List[str]]
+    fit: Optional[List[str]]
+    collar: Optional[List[str]]
+    unused: Optional[bool]
+    reviewed: Optional[bool]
 
 
 class BBoxBase(BaseModel):

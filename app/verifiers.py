@@ -1,7 +1,9 @@
-from typing import List
+from typing import List, Optional
+from collections import defaultdict
 from fastapi import UploadFile, File, HTTPException, Query
 
 from label import label_types, label_names_by_type
+from common import schemas
 
 
 def verify_csv_file(file: UploadFile = File(...)):
@@ -9,20 +11,22 @@ def verify_csv_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Content type of file should be 'text/csv', not {file.content_type!r}")
 
 
-def verify_filter(filters: List[str] = Query([])):
-    _filters = {}
-    for i, _filter in enumerate(filters):
-        if '=' not in _filter or len(_filter.split('=')) != 2:
-            raise HTTPException(status_code=400, detail=f"query string format of `filters[{i}]` should be {{label_type}}={{label_name}}")
+def verify_label_filter(filters: List[str] = Query([])) -> Optional[schemas.LabelFilter]:
+    if not filters:
+        return
+    parsed = defaultdict(list)
+    for i, filter_ in enumerate(filters):
+        if '=' not in filter_ or len(filter_.split('=')) != 2:
+            raise HTTPException(status_code=400, detail=f'query string format of filters[{i}] should be "key=value"')
 
-        label_type, label_name = _filter.split('=')
-        if label_type not in label_types():
-            raise HTTPException(status_code=400, detail=f"{label_type!r} is invalid for label type")
-        if label_name not in label_names_by_type(label_type):
-            raise HTTPException(status_code=400, detail=f"{label_name!r} is invalid for {label_type!r}")
-
-        if label_type not in _filters:
-            _filters[label_type] = [label_name]
+        key, value = filter_.split('=')
+        if key not in schemas.LabelFilter.schema()['properties']:
+            raise HTTPException(status_code=400, detail=f'Invalid value for filters[{i}]: "{key}"')
+        elif key in label_types() and value not in label_names_by_type(key):
+            raise HTTPException(status_code=400, detail=f'Invalid value for {key}: "{value}"')
+        elif schemas.LabelFilter.schema()['properties'][key]['type'] == 'array':
+            parsed[key].append(value)
         else:
-            _filters[label_type].append(label_name)
-    return _filters
+            parsed[key] = value
+
+    return schemas.LabelFilter(**parsed)

@@ -188,10 +188,10 @@ async def get_image(image_id: int, session=Depends(db_manager.get_session)):
 @app.get('/bboxes', response_model=List[schemas.BBox])
 @exception_handler
 async def get_bboxes(image_id: Optional[int] = None, file_id: Optional[int] = None,
-                     unused: Optional[bool] = None, reviewed: Optional[bool] = None,
+                     label_filter: Optional[schemas.LabelFilter] = Depends(verify_label_filter),
                      session=Depends(db_manager.get_session)):
     return await db_manager.get_bboxes(session, image_id=image_id, file_id=file_id,
-                                       unused=unused, reviewed=reviewed)
+                                       label_filter=label_filter)
 
 
 @app.put('/labels/{label_id}', response_model=schemas.Label)
@@ -205,10 +205,11 @@ async def update_label(label_id: int, label: schemas.Label, session=Depends(db_m
 
 @app.get('/export/{file_id}')
 @exception_handler
-async def export(file_id: int, filters: dict = Depends(verify_filter), session=Depends(db_manager.get_session)):
+async def export(file_id: int, label_filter: schemas.LabelFilter = Depends(verify_label_filter),
+                 session=Depends(db_manager.get_session)):
     file = await db_manager.get_file(session, file_id)
     dirname = f"{file.name.split('.')[0]}_{datetime.utcnow().strftime('%Y-%m-%d-%H-%M-%S')}"
-    data = await db_manager.get_bboxes(session, file_id=file_id, unused=False, reviewed=True, **filters)
+    data = await db_manager.get_bboxes(session, file_id=file_id, label_filter=label_filter)
     dirpath = await file_manager.export_to_yolo(dirname, data)
     return {'path': dirpath}
 
