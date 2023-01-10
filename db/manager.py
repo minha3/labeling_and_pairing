@@ -128,20 +128,20 @@ class DBManager:
 
     @staticmethod
     async def get_bboxes(session: AsyncSession, image_id: int = None, file_id: int = None, **kwargs) -> List[BBox]:
-        stmt = select(BBox).execution_options(populate_existing=True)
+        stmt = select(BBox).options(selectinload(BBox.image)).execution_options(populate_existing=True)
         if image_id:
             stmt = stmt.where(BBox.image_id == image_id)
         elif file_id:
             stmt = stmt.join(Image).where(Image.file_id == file_id)
 
-        join_label = False
-        for k, v in kwargs.items():
-            if v is not None and hasattr(Label, k):
-                stmt = stmt.where(getattr(Label, k) == v)
-                join_label = True
-
-        if join_label:
+        if kwargs:
             stmt = stmt.join(Label)
+            for k, v in kwargs.items():
+                if v is not None and hasattr(Label, k):
+                    if type(v) == list:
+                        stmt = stmt.where(getattr(Label, k).in_(v))
+                    else:
+                        stmt = stmt.where(getattr(Label, k) == v)
 
         return list(await session.scalars(stmt))
 
@@ -189,32 +189,3 @@ class DBManager:
         session.add(db_label)
         await session.commit()
         return db_label
-
-    @staticmethod
-    async def get_data_to_export(session: AsyncSession, file_id: int, **kwargs) -> List[Image]:
-        result = []
-        stmt = select(Image).where(Image.file_id == file_id).options(selectinload(Image.bboxes))
-        stmt = stmt.execution_options(populate_existing=True)
-
-        images = await session.scalars(stmt)
-        for image in images:
-            bboxes = []
-            for bbox in image.bboxes:
-                if bbox.label is None:
-                    continue
-                include = True
-                for k, v in kwargs.items():
-                    if hasattr(bbox.label, k):
-                        if type(v) == list and getattr(bbox.label, k) not in v:
-                            include = False
-                            break
-                        elif type(v) != list and getattr(bbox.label, k) != v:
-                            include = False
-                            break
-                if include:
-                    bboxes.append(bbox)
-            if bboxes:
-                image.bboxes = bboxes
-                result.append(image)
-
-        return result

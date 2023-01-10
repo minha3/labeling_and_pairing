@@ -18,7 +18,7 @@ from config import load_config
 from common.aiopool import AioTaskPool
 from common.schemas import *
 from common.exceptions import *
-from db.models import Image as DBImage
+from db.models import BBox as DBBox
 from label import *
 
 
@@ -156,7 +156,18 @@ class FileManager:
         else:
             return full_path
 
-    async def export_to_yolo(self, dirname: str, images: List[DBImage]) -> Optional[str]:
+    @staticmethod
+    def _group_bboxes_by_image(bboxes: List[DBBox]) -> List[dict]:
+        images = {}
+        for bbox in bboxes:
+            if bbox.image.id not in images:
+                images[bbox.image.id] = {'image': bbox.image, 'bboxes': [bbox]}
+            else:
+                images[bbox.image.id]['bboxes'].append(bbox)
+        return list(images.values())
+
+    async def export_to_yolo(self, dirname: str, bboxes: List[DBBox]) -> Optional[str]:
+        images = self._group_bboxes_by_image(bboxes)
         if len(images) < 2:
             raise ParameterError('Count of reviewed labels should be at least 2 to export.')
 
@@ -181,7 +192,7 @@ class FileManager:
 
             labels = []
             for i in idx_range[usage]:
-                image = images[i]
+                image = images[i]['image']
                 origin_image_path = self.get_image_file_path(image.hash)
                 rel_origin_image_path = self.get_image_file_path(image.hash, return_relative=True)
                 target_image_path = os.path.join(image_dir, rel_origin_image_path)
@@ -191,7 +202,7 @@ class FileManager:
                 target_bbox_path = os.path.join(bbox_dir, rel_origin_image_path).replace('.jpg', '.txt')
                 os.makedirs(os.path.dirname(target_bbox_path), exist_ok=True)
                 async with aiofiles.open(target_bbox_path, 'w') as f:
-                    for bbox in image.bboxes:
+                    for bbox in images[i]['bboxes']:
                         width, height = image.width, image.height
                         bwidth, bheight = bbox.rx2 - bbox.rx1, bbox.ry2 - bbox.ry1
                         await f.write(

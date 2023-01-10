@@ -2,11 +2,11 @@ import os
 import shutil
 import time
 import yaml
-import dataclasses
 import unittest
 from string import ascii_lowercase
 from random import choice
 
+from ..factories import ImageFactory, BBoxFactory, LabelFactory
 from common.exceptions import *
 from file_manager import FileManager
 from label import load_labels
@@ -38,8 +38,9 @@ class TestFileManager(unittest.IsolatedAsyncioTestCase):
             f.write(f'{self.valid_image_url}')
         return file_name
 
-    def get_valid_image_hash(self) -> str:
-        hash_ = '6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32'
+    def fake_image_file(self, hash_=None) -> str:
+        if hash_ is None:
+            hash_ = '6dc982440b8174cdf7f6251637c3f8d7acd32d2cc606746d5b1495ba86a34e32'
         hash_path = self.file_manager.get_image_file_path(hash_, not_exist_ok=True)
         os.makedirs(os.path.dirname(hash_path))
 
@@ -212,39 +213,21 @@ class TestFileManager(unittest.IsolatedAsyncioTestCase):
             self.file_manager.get_image_file_path(hash_)
 
     async def test_export_images_to_yolo_format(self):
+        def fake_bbox():
+            image = ImageFactory.build()
+            self.fake_image_file(hash_=image.hash)
+            label = LabelFactory.build()
+            bbox = BBoxFactory.build()
+            bbox.image_id, bbox.image, bbox.label = image.id, image, label
+            return bbox
+
         load_labels()
         self.file_manager.create_all()
-        hash_ = self.get_valid_image_hash()
 
-        @dataclasses.dataclass
-        class Label:
-            region: str
+        bbox1 = fake_bbox()
+        bbox2 = fake_bbox()
 
-            @staticmethod
-            def column_keys():
-                return ['region']
-
-        @dataclasses.dataclass
-        class Region:
-            rx1: float
-            ry1: float
-            rx2: float
-            ry2: float
-            label: Label
-
-        @dataclasses.dataclass
-        class Image:
-            hash: str
-            width: int
-            height: int
-            bboxes: list
-
-        label = Label(region='top')
-        region1 = Region(rx1=0.1, ry1=0.1, rx2=0.3, ry2=0.3, label=label)
-        region2 = Region(rx1=0.4, ry1=0.4, rx2=0.7, ry2=0.7, label=label)
-        image = Image(hash=hash_, width=600, height=600, bboxes=[region1, region2])
-
-        dirpath = await self.file_manager.export_to_yolo('test_export_yolo', [image, image])
+        dirpath = await self.file_manager.export_to_yolo('test_export_yolo', [bbox1, bbox2])
         files = []
         for root, dirs, files_ in os.walk(dirpath):
             for f in files_:

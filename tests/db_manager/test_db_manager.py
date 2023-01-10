@@ -229,34 +229,6 @@ class TestDBManager(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(unused, r.unused)
         self.assertEqual(reviewed, r.reviewed)
 
-    async def test_get_data_to_export_without_filter(self):
-        file = FileFactory()
-        image1 = ImageFactory(file=file)
-        bbox1 = BBoxFactory(image=image1)
-        label1 = LabelFactory(unused=False, reviewed=False, bbox=bbox1)
-        bbox2 = BBoxFactory(image=image1)
-        label2 = LabelFactory(unused=False, reviewed=True, bbox=bbox2)
-        image2 = ImageFactory(file=file)
-        bbox3 = BBoxFactory(image=image2)
-        label3 = LabelFactory(unused=False, reviewed=False, bbox=bbox3)
-        r = await DBManager.get_data_to_export(self.session, file_id=file.id)
-        self.assertEqual(2, len(r), msg='should be equal to the number of images')
-        self.assertEqual(2, len(r[0].bboxes), msg='should be equal to the number of bboxes of image1')
-
-    async def test_get_data_to_export_with_filters(self):
-        file = FileFactory()
-        image1 = ImageFactory(file=file)
-        bbox1 = BBoxFactory(image=image1)
-        label1 = LabelFactory(unused=False, reviewed=False, bbox=bbox1)
-        bbox2 = BBoxFactory(image=image1)
-        label2 = LabelFactory(unused=False, reviewed=True, bbox=bbox2)
-        image2 = ImageFactory(file=file)
-        bbox3 = BBoxFactory(image=image2)
-        label3 = LabelFactory(unused=False, reviewed=False, bbox=bbox3)
-        r = await DBManager.get_data_to_export(self.session, file_id=file.id, unused=False, reviewed=True)
-        self.assertEqual(1, len(r), msg='should not include images with bboxes that are reviewed=False')
-        self.assertEqual(1, len(r[0].bboxes), msg='should not include bboxes that are reviewed=False')
-
 
 if __name__ == '__main__':
     unittest.main(testLoader=unittest.TestLoader())
