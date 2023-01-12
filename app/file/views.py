@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, UploadFile, Response
 
 from config import CONFIG
 from common.exceptions import ParameterError
-from common.exception_handler import exception_handler
 from database.core import get_session
 from inference import InferenceClient
 from app.image.schemas import ImageRead
@@ -23,7 +22,6 @@ router = APIRouter()
 
 
 @router.post('', response_model=FileRead)
-@exception_handler
 async def create_file(file: UploadFile = Depends(verify_csv_file), session=Depends(get_session)):
     file_info, _ = await save_file(file)
     db_file = await insert(session, file_info)
@@ -33,19 +31,16 @@ async def create_file(file: UploadFile = Depends(verify_csv_file), session=Depen
 
 
 @router.get('', response_model=List[FileRead])
-@exception_handler
 async def get_files(session=Depends(get_session)):
     return await get_all(session)
 
 
 @router.get('/{file_id}', response_model=FileRead)
-@exception_handler
 async def get_file(file_id: int, session=Depends(get_session)):
     return await get_one(session, file_id)
 
 
 @router.delete('/{file_id}')
-@exception_handler
 async def delete_file(file_id: int, session=Depends(get_session)):
     db_file = await get_one(session, file_id)
     if db_file:

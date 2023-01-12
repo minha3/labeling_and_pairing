@@ -1,11 +1,13 @@
 import asyncio
 
 import uvicorn
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Request
+from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
 from config import CONFIG
 from database.core import create_engine, create_tables, dispose_engine
+from common.exceptions import ParameterError, ParameterNotFoundError
 
 from app.file.views import router as file_router
 from app.image.views import router as image_router
@@ -23,6 +25,17 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*']
 )
+
+
+@app.middleware("http")
+async def add_exception_handler(request: Request, call_next):
+    try:
+        response = await call_next(request)
+    except ParameterNotFoundError as e:
+        return JSONResponse(status_code=404, content={'detail': str(e)})
+    except ParameterError as e:
+        return JSONResponse(status_code=400, content={'detail': str(e)})
+    return response
 
 
 @app.on_event("startup")

@@ -3,7 +3,6 @@ from datetime import datetime
 from fastapi import APIRouter, Depends
 
 from common.exceptions import ParameterValueError
-from common.exception_handler import exception_handler
 from database.core import get_session
 from app.file.service import get_one as get_file
 from app.bbox.service import get_all as get_bboxes
@@ -16,7 +15,6 @@ router = APIRouter()
 
 
 @router.post('')
-@exception_handler
 async def create(file_id: int, label_filter: LabelFilter = Depends(verify_label_filter),
                  session=Depends(get_session)):
     file = await get_file(session, file_id=file_id, silent=True)
