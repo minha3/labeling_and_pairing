@@ -30,6 +30,14 @@ def test_insert_non_csv_format():
     remove_data_dir()
 
 
+def test_insert_empty_file():
+    with TestClient(app) as client:
+        response = client.post('/files',
+                               files={'file': ('empty.csv', b'')})
+        assert response.status_code == 400
+    remove_data_dir()
+
+
 def test_insert_invalid_csv_fields():
     with TestClient(app) as client:
         _test_file(client, 'invalid_csv_fields.csv', b'this,is,invalid,csv,field', {'cnt_url': -1})

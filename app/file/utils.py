@@ -10,7 +10,7 @@ import aiofiles.os
 import aiohttp
 import PIL.Image
 from aiocsv import AsyncReader
-from fastapi import UploadFile, File, HTTPException
+from fastapi import UploadFile, HTTPException
 
 from config import CONFIG
 from common.exceptions import ParameterEmptyError, ParameterExistError, \
@@ -21,8 +21,10 @@ from app.image.utils import get_image_file_path
 
 from .schemas import FileCreate
 
+CHUNK_SIZE = 1024 * 1024 * 5
 
-def verify_csv_file(file: UploadFile = File(...)):
+
+def verify_csv_file(file: UploadFile):
     if file.content_type != 'text/csv':
         raise HTTPException(status_code=400,
                             detail=f'Content type of file should be "text/csv", not "{file.content_type}"')
@@ -45,18 +47,24 @@ def get_file_dirpath() -> str:
     return os.path.join(CONFIG['path']['data'], 'files')
 
 
-async def save_file(name, content) -> Tuple[FileCreate, str]:
-    if not content:
-        raise ParameterEmptyError(name)
+async def save_file(file: UploadFile) -> Tuple[FileCreate, str]:
+    chunk = await file.read(CHUNK_SIZE)
+    if not chunk:
+        raise ParameterEmptyError(file.filename)
     file_dir = get_file_dirpath()
     os.makedirs(file_dir, exist_ok=True)
-    file_path = os.path.join(file_dir, name)
+    file_path = os.path.join(file_dir, file.filename)
     if os.path.exists(file_path):
-        raise ParameterExistError(name)
+        raise ParameterExistError(file.filename)
+    file_size = 0
     async with aiofiles.open(file_path, 'wb') as f:
-        await f.write(content)
+        await f.write(chunk)
+        file_size += len(chunk)
+        while chunk := await file.read(CHUNK_SIZE):
+            await f.write(chunk)
+            file_size += len(chunk)
 
-    return FileCreate(name=name, size=os.path.getsize(file_path)), file_path
+    return FileCreate(name=file.filename, size=file_size), file_path
 
 
 async def remove_file(name: str) -> None:

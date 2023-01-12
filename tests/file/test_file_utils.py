@@ -2,6 +2,9 @@ import unittest
 import os
 import shutil
 import time
+import io
+
+from fastapi import UploadFile
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test_utils')
 os.environ['LAP_PATH_DATA'] = DATA_DIR
@@ -37,22 +40,26 @@ class TestFileUtil(unittest.IsolatedAsyncioTestCase):
                 f.write('this is faked file\n')
         return file_name
 
+    @staticmethod
+    def get_faked_uploadfile(name, content):
+        return UploadFile(filename=name, file=io.BytesIO(content))
+
     async def test_save_file(self):
         file_name, content = 'non_empty_file.csv', b'file content'
-        _, file_path = await save_file(file_name, content)
+        _, file_path = await save_file(self.get_faked_uploadfile(file_name, content))
         self.assertTrue(os.path.exists(file_path))
 
     async def test_save_empty_file(self):
         file_name, content = 'empty_file.csv', b''
         with self.assertRaises(ParameterEmptyError):
-            await save_file(file_name, content)
+            await save_file(self.get_faked_uploadfile(file_name, content))
 
     async def test_save_duplicate_file(self):
         file_name, content = 'non_empty_file.csv', b'file content'
-        await save_file(file_name, content)
+        await save_file(self.get_faked_uploadfile(file_name, content))
 
         with self.assertRaises(ParameterExistError):
-            await save_file(file_name, content)
+            await save_file(self.get_faked_uploadfile(file_name, content))
 
     async def test_remove_file(self):
         file_name = self.get_faked_file()

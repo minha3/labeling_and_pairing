@@ -11,9 +11,7 @@ from inference import InferenceClient
 from app.image.schemas import ImageRead
 from app.image.service import insert as insert_images, get_all as get_images
 from app.image.utils import get_image_file_path
-from app.bbox.schemas import BBoxBase
 from app.bbox.service import insert as insert_bboxes
-from app.label.schemas import LabelBase
 from app.label.service import insert as insert_labels
 
 from .schemas import FileRead, FileUpdate
@@ -27,7 +25,7 @@ router = APIRouter()
 @router.post('', response_model=FileRead)
 @exception_handler
 async def create_file(file: UploadFile = Depends(verify_csv_file), session=Depends(get_session)):
-    file_info, _ = await save_file(file.filename, await file.read())
+    file_info, _ = await save_file(file)
     db_file = await insert(session, file_info)
     if db_file:
         asyncio.create_task(download_images_from_file(FileRead.from_orm(db_file)))
