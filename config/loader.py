@@ -4,7 +4,7 @@ import yaml
 
 def load(filename, dirname=None, read_envs=False):
     if dirname is None:
-        dirname = os.path.dirname(os.path.realpath(__file__))
+        dirname = os.environ.get('LAP_PATH_CONFIG', os.path.dirname(os.path.realpath(__file__)))
 
     with open(os.path.join(dirname, filename), 'r') as f:
         data = yaml.load(f, Loader=yaml.SafeLoader)

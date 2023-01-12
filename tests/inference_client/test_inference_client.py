@@ -3,7 +3,7 @@ import unittest
 
 from inference import InferenceClient
 from inference.inference_pb2 import Request, Reply
-from common import schemas
+from app.image.schemas import ImageRead
 
 # You need to run "grpc_tools.protoc" to parse "../../protos/*.proto" files
 
@@ -46,7 +46,7 @@ class TestInferenceClient(unittest.IsolatedAsyncioTestCase):
     async def test_make_request(self):
         client = InferenceClient()
         request = Request()
-        image = schemas.Image(**self.db_image)
+        image = ImageRead(**self.db_image)
         await client._make_request(request, image, self.db_image_path)
         self.assertEqual(1, len(request.images))
 
@@ -61,7 +61,7 @@ class TestInferenceClient(unittest.IsolatedAsyncioTestCase):
 
     async def test_infer(self):
         client = InferenceClient(self.config_enabled)
-        image = schemas.Image(**self.db_image)
+        image = ImageRead(**self.db_image)
         r = await client.infer([(image, self.db_image_path)])
         self.assertEqual(1, len(r))
         data = r[0]

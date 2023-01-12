@@ -90,7 +90,7 @@ class Server extends API {
     }
 
     export(fileId, filters) {
-        return this.GET(`${this.apibase}/export/${fileId}?${this.join_param({'filters': filters})}`)
+        return this.POST(`${this.apibase}/exports?file_id=${fileId}${this.join_param({'filters': filters})}`)
     }
 }
 

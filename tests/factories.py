@@ -4,8 +4,11 @@ from factory import Sequence, post_generation, LazyAttribute, Faker
 from factory.alchemy import SQLAlchemyModelFactory
 from factory.fuzzy import FuzzyFloat, FuzzyInteger, FuzzyText, FuzzyChoice
 
-from db import models
-from label import load_labels, label_names_by_type, label_types_by_region
+from app.file.models import File
+from app.image.models import Image
+from app.bbox.models import BBox
+from app.label.models import Label
+from app.label.utils import load_labels, label_names_by_type, label_types_by_region
 from . import database
 
 load_labels()
@@ -27,16 +30,17 @@ class BaseFactory(SQLAlchemyModelFactory):
 
 class FileFactory(BaseFactory):
     class Meta:
-        model = models.File
+        model = File
 
     id = Sequence(lambda n: n)
     name = Sequence(lambda n: f'File {n}')
     size = FuzzyInteger(1, 100)
+    cnt_url = FuzzyInteger(1, 100)
 
 
 class ImageFactory(BaseFactory):
     class Meta:
-        model = models.Image
+        model = Image
 
     id = Sequence(lambda n: n)
     hash = FuzzyText(chars=string.hexdigits, length=64)
@@ -55,7 +59,7 @@ class ImageFactory(BaseFactory):
 
 class BBoxFactory(BaseFactory):
     class Meta:
-        model = models.BBox
+        model = BBox
 
     id = Sequence(lambda n: n)
     rx1 = FuzzyFloat(0.0, 0.5)
@@ -82,7 +86,7 @@ class BBoxFactory(BaseFactory):
 
 class LabelFactory(BaseFactory):
     class Meta:
-        model = models.Label
+        model = Label
 
     id = Sequence(lambda n: n)
     region = FuzzyChoice(label_names_by_type('region'))

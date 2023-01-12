@@ -7,8 +7,11 @@ import time
 from typing import List, Tuple, Optional
 from inference.inference_pb2_grpc import InferenceStub
 from inference.inference_pb2 import Request, Reply
-from label import translate
-from common import schemas
+
+from app.image.schemas import ImageRead
+from app.bbox.schemas import BBoxBase
+from app.label.schemas import LabelBase
+from app.label.utils import translate
 
 
 class InferenceClient:
@@ -41,8 +44,8 @@ class InferenceClient:
             logging.exception('Unexpected exception occurred when request health check to inference server.')
             return False
 
-    async def infer(self, images: List[Tuple[schemas.Image, str]]) -> \
-            List[Tuple[int, schemas.BBoxBase, Optional[schemas.LabelBase]]]:
+    async def infer(self, images: List[Tuple[ImageRead, str]]) -> \
+            List[Tuple[int, BBoxBase, Optional[LabelBase]]]:
         """
         :param images: list of tuple(schemas.Image, path of image file)
         :return: list of tuple(image id, schemas.RegionBase, schemas.LabelBase)
@@ -88,7 +91,7 @@ class InferenceClient:
         return result
 
     @staticmethod
-    async def _make_request(request: Request, image: schemas.Image, path: str):
+    async def _make_request(request: Request, image: ImageRead, path: str):
         request_image = request.images.add()
         request_image.id = image.id
         request_image.width = image.width
@@ -97,19 +100,19 @@ class InferenceClient:
             request_image.data = await f.read()
 
     @staticmethod
-    def _parse_reply(reply: Reply) -> List[Tuple[int, schemas.BBoxBase, Optional[schemas.LabelBase]]]:
+    def _parse_reply(reply: Reply) -> List[Tuple[int, BBoxBase, Optional[LabelBase]]]:
         result = []
         for region in reply.regions:
             image_id = region.image.id
-            base_region = schemas.BBoxBase(rx1=region.bbox.rx1, ry1=region.bbox.ry1,
-                                           rx2=region.bbox.rx2, ry2=region.bbox.ry2)
+            base_region = BBoxBase(rx1=region.bbox.rx1, ry1=region.bbox.ry1,
+                                   rx2=region.bbox.rx2, ry2=region.bbox.ry2)
             labels = {}
             for label in region.labels:
                 label_type, label_name = translate(label.type), translate(label.name, label.type)
                 if label_type and label_name:
                     labels[label_type] = label_name
             if labels:
-                base_label = schemas.LabelBase(**labels)
+                base_label = LabelBase(**labels)
             else:
                 base_label = None
             result.append((image_id, base_region, base_label))

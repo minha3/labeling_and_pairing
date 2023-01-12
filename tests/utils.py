@@ -4,10 +4,22 @@ import yaml
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
-from db.models import *
-from common import schemas
+from app.file.models import File
+from app.file.schemas import FileRead
+from app.image.models import Image
+from app.image.schemas import ImageRead
+from app.bbox.models import BBox
+from app.bbox.schemas import BBoxRead
+from app.label.models import Label
 
 MY_DIR = os.path.dirname(os.path.realpath(__file__))
+
+
+def remove_data_dir(dirname=None):
+    if dirname is None:
+        dirname = os.environ.get('LAP_PATH_DATA')
+    if os.path.basename(dirname).startswith('test_') and os.path.exists(dirname):
+        shutil.rmtree(dirname)
 
 
 def insert_image_files(dirname=None):
@@ -59,7 +71,7 @@ async def insert_db_data(dbname=None):
                     session.add(db_bbox)
                     db_bboxes.append(db_bbox)
             await session.commit()
-            result.append({'file': schemas.File.from_orm(db_file),
-                           'images': [schemas.Image.from_orm(o) for o in db_images],
-                           'bboxes': [schemas.BBox.from_orm(o) for o in db_bboxes]})
+            result.append({'file': FileRead.from_orm(db_file),
+                           'images': [ImageRead.from_orm(o) for o in db_images],
+                           'bboxes': [BBoxRead.from_orm(o) for o in db_bboxes]})
     return result
