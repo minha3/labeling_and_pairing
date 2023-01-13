@@ -1,7 +1,7 @@
 import asyncio
 
 import uvicorn
-from fastapi import FastAPI, Response, Request
+from fastapi import FastAPI, Response, Request, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
@@ -18,13 +18,6 @@ from app.label.utils import load_labels
 from app.utils import create_directories
 
 app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=['http://0.0.0.0:5001', 'http://localhost:5001'],
-    # allow_origins=["*"],
-    allow_methods=['*'],
-    allow_headers=['*']
-)
 
 
 @app.middleware("http")
@@ -36,6 +29,15 @@ async def add_exception_handler(request: Request, call_next):
     except ParameterError as e:
         return JSONResponse(status_code=400, content={'detail': str(e)})
     return response
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['http://0.0.0.0:5001', 'http://localhost:5001'],
+    # allow_origins=["*"],
+    allow_methods=['*'],
+    allow_headers=['*']
+)
 
 
 @app.on_event("startup")
