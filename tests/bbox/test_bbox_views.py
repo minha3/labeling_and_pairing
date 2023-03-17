@@ -47,7 +47,7 @@ def test_get_bboxes_from_image():
     remove_data_dir()
 
 
-def test_get_bboxes_from_file_with_label_filter():
+def test_get_bboxes_from_file_with_label_type_filter():
     with TestClient(app) as client:
         testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
         assert len(testsets) > 0
@@ -56,6 +56,27 @@ def test_get_bboxes_from_file_with_label_filter():
         test_label_name = 'street'
 
         answer = sum(getattr(o.label, test_label_type) == test_label_name
+                     for o in testset['bboxes'])
+
+        response = client.get('/bboxes', params={'file_id': testset['file'].id,
+                                                 'filters': f'{test_label_type}={test_label_name}'})
+        assert response.status_code == 200
+        result = response.json()
+        assert len(result['items']) == answer, \
+            f'total count of bboxes that {test_label_type} is {test_label_name} ' \
+            f'should be matched with prepared data'
+    remove_data_dir()
+
+
+def test_get_bboxes_from_file_with_label_state_filter():
+    with TestClient(app) as client:
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
+        assert len(testsets) > 0
+        testset = testsets[0]
+        test_label_type = 'unused'
+        test_label_name = 'false'
+
+        answer = sum(getattr(o.label, test_label_type) == False if test_label_name == 'false' else True
                      for o in testset['bboxes'])
 
         response = client.get('/bboxes', params={'file_id': testset['file'].id,

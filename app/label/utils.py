@@ -101,7 +101,7 @@ class LabelUtil:
     def verify_label_parameter(self, label_type: str, label_name: Optional[str] = None) -> bool:
         if label_type not in LabelFilter.schema()['properties']:
             raise HTTPException(status_code=400, detail=f'Invalid value for field name of label: "{label_type}"')
-        elif label_name and label_name not in self.label_names_by_type(label_type):
+        elif label_name and label_type in self.label_types() and label_name not in self.label_names_by_type(label_type):
             raise HTTPException(status_code=400, detail=f'Invalid value for {label_type}: "{label_name}"')
 
         return True
