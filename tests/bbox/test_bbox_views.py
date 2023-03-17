@@ -26,7 +26,8 @@ def test_get_bboxes_from_file():
         response = client.get('/bboxes', params={'file_id': testset['file'].id})
         assert response.status_code == 200
         result = response.json()
-        assert len(result) == len(testset['bboxes'])
+        assert len(result['items']) == len(testset['bboxes'])
+        assert result['total'] == len(testset['bboxes'])
     remove_data_dir()
 
 
@@ -40,7 +41,8 @@ def test_get_bboxes_from_image():
         for image in testset['images']:
             response = client.get('/bboxes', params={'image_id': image.id})
             assert response.status_code == 200
-            assert len(response.json()) == answers[image.id], \
+            result = response.json()
+            assert len(result['items']) == answers[image.id], \
                 f'total count of bboxes of {image} should be matched with prepared data'
     remove_data_dir()
 
@@ -60,7 +62,7 @@ def test_get_bboxes_from_file_with_label_filter():
                                                  'filters': f'{test_label_type}={test_label_name}'})
         assert response.status_code == 200
         result = response.json()
-        assert len(result) == answer, \
+        assert len(result['items']) == answer, \
             f'total count of bboxes that {test_label_type} is {test_label_name} ' \
             f'should be matched with prepared data'
     remove_data_dir()
@@ -80,7 +82,7 @@ def test_get_bboxes_from_file_with_label_sort_asc():
                                                  'sort_by': f'{sort_label_type}'})
         assert response.status_code == 200
         result = response.json()
-        assert result == answer, \
+        assert result['items'] == answer, \
             f'boxes should be sorted in the order of {sort_label_type} labels'
     remove_data_dir()
 
@@ -100,7 +102,7 @@ def test_get_bboxes_from_file_with_label_sort_desc():
                                                  'sort_by': f'-{sort_label_type}'})
         assert response.status_code == 200
         result = response.json()
-        assert result == answer, \
+        assert result['items'] == answer, \
             f'boxes should be sorted in reverse order of {sort_label_type} labels'
     remove_data_dir()
 
@@ -121,6 +123,26 @@ def test_get_bboxes_from_file_with_label_sort_multiple():
                                                  'sort_by': f'{sort_label_type}'})
         assert response.status_code == 200
         result = response.json()
-        assert result == answer, \
+        assert result['items'] == answer, \
             f'boxes should be sorted in the order of {sort_label_type}'
+    remove_data_dir()
+
+
+def test_get_bboxes_from_file_with_pagination():
+    with TestClient(app) as client:
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
+        assert len(testsets) > 0
+        testset = testsets[0]
+        page = 1
+        items_per_page = 2
+
+        response = client.get('/bboxes', params={'file_id': testset['file'].id,
+                                                 'page': page,
+                                                 'items_per_page': items_per_page})
+        assert response.status_code == 200
+        result = response.json()
+        assert result['total'] == len(testset['bboxes'])
+        assert result['page'] == page
+        assert result['items_per_page'] == items_per_page
+        assert len(result['items']) == items_per_page
     remove_data_dir()

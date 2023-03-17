@@ -3,7 +3,7 @@ import os
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.bbox.schemas import BBoxBase
-from app.bbox.service import insert, get_all
+from app.bbox.service import insert, get_all, get_all_paginated
 from app.label.schemas import LabelFilter
 
 from ..database import create_database, dispose_database, get_session, remove_session
@@ -91,3 +91,14 @@ class TestBBoxService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(2, len(r))
         self.assertEqual(sorted([label1.region, label2.region], reverse=True),
                          [o.label.region for o in r])
+
+    async def test_get_all_paginated(self):
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        BBoxFactory(image=image)
+        BBoxFactory(image=image)
+        r = await get_all_paginated(self.session, file_id=file.id, page=1, items_per_page=1)
+        self.assertEqual(2, r['total'])
+        self.assertEqual(1, r['page'])
+        self.assertEqual(1, r['items_per_page'])
+        self.assertEqual(1, len(r['items']))

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel
 
@@ -23,3 +23,10 @@ class BBoxRead(BBoxBase):
 
     class Config:
         orm_mode = True
+
+
+class BBoxPaginated(BaseModel):
+    items: List[BBoxRead]
+    total: int
+    page: int
+    items_per_page: int
