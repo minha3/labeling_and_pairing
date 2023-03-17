@@ -50,7 +50,7 @@ class TestBBoxService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(2, len(r))
         self.assertTrue(all(o.image.file_id == file.id for o in r))
 
-    async def test_get_all_with_filters(self):
+    async def test_get_all_with_label_filter(self):
         file = FileFactory()
         image = ImageFactory(file=file)
         bbox1 = BBoxFactory(image=image)
@@ -65,3 +65,29 @@ class TestBBoxService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(1, len(r))
         self.assertEqual(bbox2.id, r[0].id)
         self.assertTrue(r[0].label.reviewed)
+
+    async def test_get_all_with_label_sort_asc(self):
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox1 = BBoxFactory(image=image)
+        label1 = LabelFactory(unused=False, reviewed=False, bbox=bbox1)
+        bbox2 = BBoxFactory(image=image)
+        label2 = LabelFactory(unused=True, reviewed=True, bbox=bbox2)
+        r = await get_all(self.session, file_id=file.id,
+                          label_sort=[{'field': 'region', 'direction': 'asc'}])
+        self.assertEqual(2, len(r))
+        self.assertEqual(sorted([label1.region, label2.region]),
+                         [o.label.region for o in r])
+
+    async def test_get_all_with_label_sort_desc(self):
+        file = FileFactory()
+        image = ImageFactory(file=file)
+        bbox1 = BBoxFactory(image=image)
+        label1 = LabelFactory(unused=False, reviewed=False, bbox=bbox1)
+        bbox2 = BBoxFactory(image=image)
+        label2 = LabelFactory(unused=True, reviewed=True, bbox=bbox2)
+        r = await get_all(self.session, file_id=file.id,
+                          label_sort=[{'field': 'region', 'direction': 'desc'}])
+        self.assertEqual(2, len(r))
+        self.assertEqual(sorted([label1.region, label2.region], reverse=True),
+                         [o.label.region for o in r])

@@ -64,3 +64,63 @@ def test_get_bboxes_from_file_with_label_filter():
             f'total count of bboxes that {test_label_type} is {test_label_name} ' \
             f'should be matched with prepared data'
     remove_data_dir()
+
+
+def test_get_bboxes_from_file_with_label_sort_asc():
+    with TestClient(app) as client:
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
+        assert len(testsets) > 0
+        testset = testsets[0]
+        sort_label_type = 'style'
+
+        answer = sorted(testset['bboxes'],
+                        key=lambda o: getattr(o.label, sort_label_type))
+
+        response = client.get('/bboxes', params={'file_id': testset['file'].id,
+                                                 'sort_by': f'{sort_label_type}'})
+        assert response.status_code == 200
+        result = response.json()
+        assert result == answer, \
+            f'boxes should be sorted in the order of {sort_label_type} labels'
+    remove_data_dir()
+
+
+def test_get_bboxes_from_file_with_label_sort_desc():
+    with TestClient(app) as client:
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
+        assert len(testsets) > 0
+        testset = testsets[0]
+        sort_label_type = 'style'
+
+        answer = sorted(testset['bboxes'],
+                        key=lambda o: getattr(o.label, sort_label_type),
+                        reverse=True)
+
+        response = client.get('/bboxes', params={'file_id': testset['file'].id,
+                                                 'sort_by': f'-{sort_label_type}'})
+        assert response.status_code == 200
+        result = response.json()
+        assert result == answer, \
+            f'boxes should be sorted in reverse order of {sort_label_type} labels'
+    remove_data_dir()
+
+
+def test_get_bboxes_from_file_with_label_sort_multiple():
+    with TestClient(app) as client:
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
+        assert len(testsets) > 0
+        testset = testsets[0]
+        sort_label_type = 'region,-style'
+
+        answer = sorted(
+            testset['bboxes'],
+            key=lambda o: (o.label.region, -ord(o.label.style[0]))
+        )
+
+        response = client.get('/bboxes', params={'file_id': testset['file'].id,
+                                                 'sort_by': f'{sort_label_type}'})
+        assert response.status_code == 200
+        result = response.json()
+        assert result == answer, \
+            f'boxes should be sorted in the order of {sort_label_type}'
+    remove_data_dir()

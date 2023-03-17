@@ -2,9 +2,11 @@ import os
 import unittest
 
 from app.label.utils import *
+from app.label.schemas import LabelFilter
+from fastapi import Query, HTTPException
 
 
-class TestLabelParser(unittest.TestCase):
+class TestLabelUtil(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         load_labels(os.path.dirname(os.path.realpath(__file__)))
@@ -45,6 +47,38 @@ class TestLabelParser(unittest.TestCase):
                 self.fabric = fabric
         region = MockRegion(category='top', fabric='jersey')
         self.assertEqual('sweetshirt', custom_label(region))
+
+    def test_verify_label_filter(self):
+        self.assertEqual(LabelFilter(region=['top', 'bottom']),
+                         verify_label_filter(filters=['region=top', 'region=bottom']))
+
+    def test_verify_label_filter_with_invalid_format(self):
+        self.assert_http_400(verify_label_filter, filters=['foo', 'bar'])
+
+    def test_verify_label_filter_with_invalid_key(self):
+        self.assert_http_400(verify_label_filter, filters=['invalid_label_type=top'])
+
+    def test_verify_label_filter_with_invalid_value(self):
+        self.assert_http_400(verify_label_filter, filters=['region=invalid_label_name'])
+
+    def test_verify_label_filter_with_empty(self):
+        self.assertEqual(None, verify_label_filter([]))
+
+    def test_verify_label_sort(self):
+        self.assertEqual(
+            [{'field': 'region', 'direction': 'asc'},
+             {'field': 'fabric', 'direction': 'desc'}],
+            verify_label_sort('region,-fabric')
+        )
+
+    def test_verify_label_sort_with_invalid_value(self):
+        self.assert_http_400(verify_label_sort, 'foo,-bar')
+
+    def assert_http_400(self, func, *args, **kwargs):
+        with self.assertRaises(HTTPException) as e:
+            func(*args, **kwargs)
+
+        self.assertEqual(400, e.exception.status_code)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from sqlalchemy import select
+from sqlalchemy import select, asc, desc
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,19 +33,27 @@ async def insert(session: AsyncSession, pairs: List[Tuple[int, BBoxBase]]) -> \
 
 
 async def get_all(session: AsyncSession, image_id: int = None, file_id: int = None,
-                  label_filter: LabelFilter = None) -> List[BBox]:
+                  label_filter: LabelFilter = None,
+                  label_sort: Optional[List[dict]] = None) -> List[BBox]:
     stmt = select(BBox).options(selectinload(BBox.image)).execution_options(populate_existing=True)
     if image_id:
         stmt = stmt.where(BBox.image_id == image_id)
     elif file_id:
         stmt = stmt.join(Image).where(Image.file_id == file_id)
 
-    if label_filter:
+    if label_filter or label_sort:
         stmt = stmt.join(Label)
+
+    if label_filter:
         for k, v in label_filter.dict(exclude_unset=True, exclude_none=True).items():
             if type(v) == list:
                 stmt = stmt.where(getattr(Label, k).in_(v))
             else:
                 stmt = stmt.where(getattr(Label, k) == v)
+
+    if label_sort:
+        for sort in label_sort:
+            direction_func = asc if sort['direction'] == 'asc' else desc
+            stmt = stmt.order_by(direction_func(getattr(Label, sort['field'])))
 
     return list(await session.scalars(stmt))

@@ -1,6 +1,6 @@
 __all__ = ['load_labels', 'label_types', 'label_names_by_type',
            'label_types_by_region', 'translate', 'custom_label',
-           'verify_label_filter']
+           'verify_label_filter', 'verify_label_sort']
 
 import os
 import yaml
@@ -98,7 +98,29 @@ class LabelUtil:
                 return label
         return None
 
-    def verify_label_filter(self, filters: List[str] = Query([])) -> Optional[LabelFilter]:
+    def verify_label_parameter(self, label_type: str, label_name: Optional[str] = None) -> bool:
+        if label_type not in LabelFilter.schema()['properties']:
+            raise HTTPException(status_code=400, detail=f'Invalid value for field name of label: "{label_type}"')
+        elif label_name and label_name not in self.label_names_by_type(label_type):
+            raise HTTPException(status_code=400, detail=f'Invalid value for {label_type}: "{label_name}"')
+
+        return True
+
+    def verify_label_filter(self, filters: List[str]) -> Optional[LabelFilter]:
+        """
+        Validate and parse the filter strings to construct a `LabelFilter`
+        :param filters: Each filter should be in the format "label_type=label_name".
+                        If a label_type supports multi label names,
+                        multiple "label_type=label_name" can be provided
+                        for each label_name.
+
+        :return: None if input list of filters is empty.
+                 Otherwise, `LabelFilter` object
+
+        :raises: 1.`HTTPException` with status code 400 if the format is incorrect
+                    or label_type is invalid
+                    or label_name is invalid.
+        """
         if not filters:
             return
         parsed = defaultdict(list)
@@ -107,17 +129,54 @@ class LabelUtil:
                 raise HTTPException(status_code=400,
                                     detail=f'query string format of filters[{i}] should be "key=value"')
 
-            key, value = filter_.split('=')
-            if key not in LabelFilter.schema()['properties']:
-                raise HTTPException(status_code=400, detail=f'Invalid value for filters[{i}]: "{key}"')
-            elif key in self.label_types() and value not in self.label_names_by_type(key):
-                raise HTTPException(status_code=400, detail=f'Invalid value for {key}: "{value}"')
-            elif LabelFilter.schema()['properties'][key]['type'] == 'array':
-                parsed[key].append(value)
+            label_type, label_name = filter_.split('=')
+            self.verify_label_parameter(label_type, label_name)
+            if LabelFilter.schema()['properties'][label_type]['type'] == 'array':
+                parsed[label_type].append(label_name)
             else:
-                parsed[key] = value
+                parsed[label_type] = label_name
 
         return LabelFilter(**parsed)
+
+    def verify_label_sort(self, sort_by: Optional[str]) -> Optional[List[dict]]:
+        """
+        Convert the `sort_by` query parameter into a list of `spec` objects that define the
+         order of the results.
+
+        :param sort_by: should be in the format `label_type,-label_type`, where each field name is
+            a column in the database model.
+            `label_type` means the results should be sorted by label_type in ascending order.
+            `-label_type` means the results should be sorted by label_type in descending order.
+
+        :return: list of `spec`.
+                 The `spec` object has the following properties:
+                    `field`: the name of column in the model
+                    `direction`: either "asc" or "desc" to indicate the sort direction
+
+        :raises: 1.`HTTPException` with status code 400 if the format is incorrect
+                    or label_type is invalid
+                    or label_name is invalid.
+
+        :example:
+            Input: sort_by="region,-fabric"
+            Output: [{'field': 'region', 'direction': 'asc'},
+                     {'field': 'fabric', 'direction': 'desc'}]
+        """
+
+        if sort_by is None:
+            return None
+
+        spec = []
+        for label_type in sort_by.split(','):
+            direction = 'asc'
+            if label_type.startswith('-'):
+                direction = 'desc'
+                label_type = label_type[1:]
+
+            self.verify_label_parameter(label_type)
+            spec.append({'field': label_type, 'direction': direction})
+
+        return spec
 
 
 LABEL = LabelUtil()
@@ -149,3 +208,7 @@ def verify_label_filter(filters: List[str] = Query([])) -> Optional[LabelFilter]
 
 def custom_label(cls: object) -> str:
     return LABEL.custom_label(cls)
+
+
+def verify_label_sort(sort_by: Optional[str] = Query(None)) -> Optional[List[dict]]:
+    return LABEL.verify_label_sort(sort_by)
