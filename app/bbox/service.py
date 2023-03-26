@@ -74,13 +74,13 @@ def _stmt_bbox():
 
 
 def _stmt_image_id(stmt: selectable, image_id: Optional[int] = None):
-    if image_id:
+    if image_id is not None:
         stmt = stmt.where(BBox.image_id == image_id)
     return stmt
 
 
 def _stmt_file_id(stmt: selectable, file_id: Optional[int] = None):
-    if file_id:
+    if file_id is not None:
         stmt = stmt.join(Image).where(Image.file_id == file_id)
     return stmt
 
