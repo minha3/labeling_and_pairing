@@ -48,3 +48,21 @@ def test_update_reviewed():
         result = response.json()
         assert result['reviewed'] == answer
     remove_data_dir()
+
+
+def test_get_statistics():
+    with TestClient(app) as client:
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
+        assert len(testsets) > 0
+        testset = testsets[0]
+
+        answer = len(testset['bboxes'])
+
+        response = client.get(f"/labels/statistics",
+                              params={'file_id': testset['file'].id})
+        assert response.status_code == 200
+        result = response.json()
+        assert 'region' in result
+        assert sum(result['region'].values()) == answer, \
+            'All bboxes should have `region` label.'
+    remove_data_dir()

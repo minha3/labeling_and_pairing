@@ -3,11 +3,11 @@ import os
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from common.exceptions import ParameterNotFoundError
-from app.label.schemas import LabelBase, LabelUpdate
-from app.label.service import insert, get_one, update
+from app.label.schemas import LabelBase, LabelUpdate, LabelFilter
+from app.label.service import insert, get_one, update, get_all
 
 from ..database import create_database, dispose_database, get_session, remove_session
-from ..factories import LabelFactory
+from ..factories import LabelFactory, FileFactory, ImageFactory, BBoxFactory
 
 
 class TestLabelService(unittest.IsolatedAsyncioTestCase):
@@ -57,3 +57,29 @@ class TestLabelService(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(r)
         self.assertEqual(unused, r.unused)
         self.assertEqual(reviewed, r.reviewed)
+
+    async def test_get_all(self):
+        LabelFactory(unused=False, reviewed=False)
+        LabelFactory(unused=False, reviewed=False)
+        r = await get_all(self.session)
+        self.assertEqual(2, len(r))
+
+    async def test_get_all_with_label_filter(self):
+        LabelFactory(unused=False, reviewed=False)
+        LabelFactory(unused=False, reviewed=True)
+        r = await get_all(self.session, label_filter=LabelFilter(reviewed=False))
+        self.assertEqual(1, len(r))
+
+    async def test_get_all_with_file_id(self):
+        file1 = FileFactory()
+        image1 = ImageFactory(file=file1)
+        bbox1 = BBoxFactory(image=image1)
+        LabelFactory(unused=False, reviewed=False, bbox=bbox1)
+
+        file2 = FileFactory()
+        image2 = ImageFactory(file=file2)
+        bbox2 = BBoxFactory(image=image2)
+        LabelFactory(unused=False, reviewed=False, bbox=bbox2)
+
+        r = await get_all(self.session, file_id=file1.id)
+        self.assertEqual(1, len(r))

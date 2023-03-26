@@ -54,3 +54,22 @@ class LabelFilter(BaseModel):
     collar: Optional[List[str]]
     unused: Optional[bool]
     reviewed: Optional[bool]
+
+
+class LabelStatistics(BaseModel):
+    region: dict
+    style: dict
+    category: dict
+    fabric: dict
+    print: dict
+    detail: dict
+    color: dict
+    center_back_length: dict
+    sleeve_length: dict
+    neckline: dict
+    fit: dict
+    collar: dict
+
+
+class LabelStatisticsRead(LabelStatistics):
+    pass

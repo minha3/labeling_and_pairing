@@ -1,6 +1,6 @@
 __all__ = ['load_labels', 'label_types', 'label_names_by_type',
            'label_types_by_region', 'translate', 'custom_label',
-           'verify_label_filter', 'verify_label_sort']
+           'verify_label_filter', 'verify_label_sort', 'label_statistics']
 
 import os
 import yaml
@@ -9,6 +9,7 @@ from collections import defaultdict
 
 from fastapi import Query, HTTPException
 
+from .models import Label
 from .schemas import LabelFilter
 
 
@@ -178,6 +179,21 @@ class LabelUtil:
 
         return spec
 
+    def label_statistics(self, labels: List[Label]) -> dict:
+        result = {k: {} for k in self.label_types()}
+        for label_type in result.keys():
+            for label_name in self.label_names_by_type(label_type):
+                result[label_type][label_name] = 0
+
+        for label in labels:
+            for label_type in result.keys():
+                if hasattr(label, label_type):
+                    label_name = getattr(label, label_type)
+                    if label_name in result[label_type]:
+                        result[label_type][label_name] += 1
+
+        return result
+
 
 LABEL = LabelUtil()
 
@@ -212,3 +228,7 @@ def custom_label(cls: object) -> str:
 
 def verify_label_sort(sort_by: Optional[str] = Query(None)) -> Optional[List[dict]]:
     return LABEL.verify_label_sort(sort_by)
+
+
+def label_statistics(labels: List[Label]) -> dict:
+    return LABEL.label_statistics(labels)
