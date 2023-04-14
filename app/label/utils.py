@@ -187,10 +187,9 @@ class LabelUtil:
 
         for label in labels:
             for label_type in result.keys():
-                if hasattr(label, label_type):
-                    label_name = getattr(label, label_type)
-                    if label_name in result[label_type]:
-                        result[label_type][label_name] += 1
+                label_name = getattr(label, label_type, None)
+                if label_name in result[label_type]:
+                    result[label_type][label_name] += 1
 
         return result
 

@@ -1,9 +1,12 @@
 import os
 import unittest
 
+from fastapi import HTTPException
+
 from app.label.utils import *
 from app.label.schemas import LabelFilter
-from fastapi import Query, HTTPException
+
+from ..factories import LabelFactory
 
 
 class TestLabelUtil(unittest.TestCase):
@@ -73,6 +76,21 @@ class TestLabelUtil(unittest.TestCase):
 
     def test_verify_label_sort_with_invalid_value(self):
         self.assert_http_400(verify_label_sort, 'foo,-bar')
+
+    def test_label_statistics(self):
+        labels = []
+        for region, category, fabric in [
+            ('top', 'top', 'padded'),
+            ('bottom', 'skirt', 'padded'),
+            ('bottom', 'pants', 'jersey'),
+        ]:
+            labels.append(LabelFactory.build(region=region, category=category, fabric=fabric))
+
+        self.assertEqual({'region': {'top': 1, 'bottom': 2, 'outer': 0, 'dress': 0},
+                          'category': {'pants': 1, 'dress': 0, 'skirt': 1, 'top': 1, 'down_jacket': 0},
+                          'fabric': {'padded': 2, 'jersey': 1},
+                          'sleeve_length': {'long_sleeve': 0, 'short_sleeve': 0}},
+                         label_statistics(labels))
 
     def assert_http_400(self, func, *args, **kwargs):
         with self.assertRaises(HTTPException) as e:
