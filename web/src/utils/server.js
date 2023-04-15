@@ -79,14 +79,18 @@ class Server extends API {
         return`${this.apibase}/images/${imageId}`
     }
 
-    get_bboxes_from_file(fileId, filters) {
-        return this.GET(`${this.apibase}/bboxes?file_id=${fileId}${this.join_param({'filters': filters})}`)
+    get_bboxes_from_file(fileId, filters, page=1, items_per_page=-1) {
+        return this.GET(`${this.apibase}/bboxes?file_id=${fileId}&page=${page}&items_per_page=${items_per_page}${this.join_param({'filters': filters})}`)
     }
 
     update_label(labelId, data) {
         const headers = new Headers();
         headers.append('Content-Type', 'application/json');
         return this.PUT(`${this.apibase}/labels/${labelId}`, JSON.stringify(data), headers)
+    }
+
+    get_label_statistics(fileId, filters) {
+        return this.GET(`${this.apibase}/labels/statistics?file_id=${fileId}${this.join_param({'filters': filters})}`)
     }
 
     export(fileId, filters) {
