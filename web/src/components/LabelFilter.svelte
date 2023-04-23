@@ -25,18 +25,11 @@
     )
   }
 
-  function clearChecked() {
+  function clearChecked(e) {
     for (const key in filterConditions) {
       filterConditions[key] = [];
     }
-    onChange();
-  }
-
-  function checkAll() {
-    for (const key in filterConditions) {
-      filterConditions[key] = Object.keys(labelStatistics[key]);
-    }
-    onChange();
+    onChange(e);
   }
 
   function onChange(e) {
@@ -57,11 +50,8 @@
 {#key labelStatistics}
   <div class="row mt-3 mb-3">
     <div class="col">
-      <button class="btn btn-outline-info" on:click={() => {clearChecked()}}>선택 해제</button>
+      <button class="btn btn-outline-info" on:click={e => {clearChecked(e)}}>선택 해제</button>
     </div>
-<!--    <div class="col">-->
-<!--      <button class="btn btn-outline-info" on:click={() => {checkAll()}}>전체 선택</button>-->
-<!--    </div>-->
   </div>
   {#each Object.entries(labelStatistics) as [label_type, label_counts]}
     <h5>{label_type}</h5>
