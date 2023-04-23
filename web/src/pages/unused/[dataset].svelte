@@ -4,6 +4,7 @@
   import Pagination from "../../components/Pagination.svelte";
   import RegionCanvas from "../../components/RegionCanvas.svelte";
   import LabelFilter from "../../components/LabelFilter.svelte";
+  import LabelList from "../../components/LabelList.svelte";
 
   const dispatch = createEventDispatcher();
   const server = new Server();
@@ -59,7 +60,9 @@
     page = 1;
   }
 
-  async function onLabelChange() {
+  async function onLabelChange(event) {
+    const region = event.detail.region;
+    await server.update_label(region.label.id, region.label);
     await getRegions(filters, page, pageSize);
     await getLabelStatistics(statusFilter);
   }
@@ -93,15 +96,19 @@
           {#each [...Array(gridCol).keys()] as c}
             <div class="col">
               {#if gridCol * r + c < regions.length}
-                <RegionCanvas region={regions[gridCol * r + c]} editCallback={onLabelChange}
-                              useEditable={true} />
+                <RegionCanvas region={regions[gridCol * r + c]}
+                />
+                <LabelList region={regions[gridCol * r + c]}
+                           on:labelChange={onLabelChange}
+                           useEditable={true}
+                />
               {/if}
             </div>
           {/each}
         </div>
       {/each}
       <slot name="bottom">
-        <div class="mt-2">
+        <div class="mt-5">
           <Pagination totalCount={totalCount} pageCurrent={page} pageSize={pageSize} on:pageChange={onPageChange}/>
         </div>
       </slot>

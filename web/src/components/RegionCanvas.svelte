@@ -1,7 +1,5 @@
 <script>
-  import LABELS from './labels.json';
   import Server from "../utils/server";
-  import LabelEditor from "./LabelEditor.svelte";
 
   import { createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher();
@@ -10,15 +8,10 @@
   const deepCopy = (obj) => JSON.parse(JSON.stringify(obj));
 
   export let region;
-  export let editCallback = undefined;
-  export let labelEditable = false;
-  export let useEditable = false;
-  export let reviewedEditable = false;
+  export let bboxEditable = false;
   let imgCanvas;
   let bboxCanvas;
   let bbox = {'x1': null, 'x2': null, 'y1': null, 'y2': null};
-  let labels;
-  let clickedLabelType;
 
   // to draw the corners of the bounding box prominently
   let boxCornerSize = 8;
@@ -27,7 +20,6 @@
   let startCoords = {'x': null, 'y': null};
 
   $: if (region) drawRegion(region)
-  $: joinLabels(region, ", ")
 
   function drawRegion(region_) {
     if (region_ !== undefined) {
@@ -47,7 +39,8 @@
         drawBBox();
 
         // to allow the user to modify the coordinates of the bounding box
-        addBBoxEventListener();
+        if (bboxEditable)
+          addBBoxEventListener();
       }
     }
     else {
@@ -152,7 +145,7 @@
       if (isDragging) {
         initDragParams();
         drawBBox(); // 캔버스를 다시 그리는 함수
-        onBBoxChange(event);
+        onChange(event);
       }
     })
   }
@@ -244,7 +237,7 @@
     }
   }
 
-  function onBBoxChange(e) {
+  function onChange(e) {
     const changedRegion = deepCopy(region)
     Object.assign(changedRegion, calcBBoxRelCoords())
 
@@ -255,60 +248,12 @@
 
     dispatch("bboxChange", detail)
   }
-
-  function joinLabels(region_, delimiter) {
-    const values = Array();
-    for (const [key, value] of Object.entries(region_.label)) {
-      if (LABELS.hasOwnProperty(key) && value != null) {
-        values.push(value)
-      }
-    }
-    labels = values.join(delimiter)
-  }
-
-  async function onEdit(regionId, key, value) {
-    if (region.label.hasOwnProperty(key)) {
-      region.label[key] = value
-      const response = await server.update_label(region.label.id, region.label)
-      if (typeof editCallback == 'function')
-        editCallback(response, key, value)
-    }
-  }
-
 </script>
 {#if region}
-  <div class="row">
+  <div class="row mt-2">
     <div class="col">
       <canvas bind:this={imgCanvas} style="width: 100%; z-index: 1;"></canvas>
       <canvas bind:this={bboxCanvas} style="width: 100%; z-index: 2; position: absolute;"></canvas>
     </div>
   </div>
-  <div class="row mt-2">
-    <div class="col">
-      {#if labelEditable}
-        {#each Object.entries(region.label) as [key, value]}
-          {#if LABELS.hasOwnProperty(key) && value}
-            <button type="button" class="btn btn-sm btn-outline-info" data-toggle="modal" data-target="#LabelEditor{region.id}" on:click={() => {clickedLabelType = key;}}>
-              {value}
-            </button>
-          {/if}
-        {/each}
-        <LabelEditor bind:labelType={clickedLabelType} modalId={region.id} onEdit={onEdit}/>
-      {:else}
-        <p>{labels}</p>
-      {/if}
-      {#if reviewedEditable}
-        <button class="btn btn-sm btn-outline-success"
-                on:click={() => {onEdit(region.id, 'reviewed', !region.label.reviewed)}}>
-          {region.label.reviewed? '재태깅' : '완료'}
-        </button>
-      {/if}
-      {#if useEditable}
-        <button class="btn btn-sm btn-outline-danger"
-                on:click={() => {onEdit(region.id, 'unused', !region.label.unused)}}>
-          {region.label.unused? '복구' : '삭제'}
-        </button>
-      {/if}
-    </div>
-    </div>
 {/if}

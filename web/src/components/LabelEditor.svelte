@@ -29,7 +29,7 @@
       <div class="modal-body">
         {#if labelType}
           {#each LABELS[labelType].labels as l}
-            <button type="button" class="btn btn-outline-info" data-dismiss="modal" on:click={() => {onEdit(modalId, labelType, l)}}>{l}</button>
+            <button type="button" class="btn btn-outline-info" data-dismiss="modal" on:click={e => {onEdit(e, modalId, labelType, l)}}>{l}</button>
           {/each}
         {/if}
       </div>
