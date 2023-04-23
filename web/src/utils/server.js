@@ -89,6 +89,12 @@ class Server extends API {
         return this.PUT(`${this.apibase}/labels/${labelId}`, JSON.stringify(data), headers)
     }
 
+    update_bbox(bboxId, data) {
+        const headers = new Headers();
+        headers.append('Content-Type', 'application/json');
+        return this.PUT(`${this.apibase}/bboxes/${bboxId}`, JSON.stringify(data), headers)
+    }
+
     get_label_statistics(fileId, filters) {
         return this.GET(`${this.apibase}/labels/statistics?file_id=${fileId}${this.join_param({'filters': filters})}`)
     }

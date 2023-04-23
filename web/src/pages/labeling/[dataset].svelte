@@ -64,6 +64,12 @@
     await getLabelStatistics(statusFilter);
   }
 
+  async function onBBoxChange(event) {
+    const region = event.detail.region;
+    await server.update_bbox(region.id, region);
+    await getRegions(filters, page, pageSize);
+  }
+
   setContext("state", {
     getState: () => ({
       page,
@@ -94,7 +100,9 @@
           {#each [...Array(gridCol).keys()] as c}
             <div class="col">
               {#if gridCol * r + c < regions.length}
-                <RegionCanvas region={regions[gridCol * r + c]} editCallback={onLabelChange}
+                <RegionCanvas region={regions[gridCol * r + c]}
+                              on:bboxChange={onBBoxChange}
+                              editCallback={onLabelChange}
                               labelEditable={true} reviewedEditable={true} useEditable={true}/>
               {/if}
             </div>

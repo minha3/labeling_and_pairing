@@ -3,7 +3,12 @@
   import Server from "../utils/server";
   import LabelEditor from "./LabelEditor.svelte";
 
+  import { createEventDispatcher } from "svelte";
+  const dispatch = createEventDispatcher();
+
   const server = new Server()
+  const deepCopy = (obj) => JSON.parse(JSON.stringify(obj));
+
   export let region;
   export let editCallback = undefined;
   export let labelEditable = false;
@@ -147,6 +152,7 @@
       if (isDragging) {
         initDragParams();
         drawBBox(); // 캔버스를 다시 그리는 함수
+        onBBoxChange(event);
       }
     })
   }
@@ -227,6 +233,27 @@
         startCoords.y = clickedY;
       }
     }
+  }
+
+  function calcBBoxRelCoords() {
+    return {
+      'rx1': Math.max(0, Math.min(1.0, bbox.x1 / bboxCanvas.width)),
+      'ry1': Math.max(0, Math.min(1.0, bbox.y1 / bboxCanvas.height)),
+      'rx2': Math.max(0, Math.min(1.0, bbox.x2 / bboxCanvas.width)),
+      'ry2': Math.max(0, Math.min(1.0, bbox.y2 / bboxCanvas.height)),
+    }
+  }
+
+  function onBBoxChange(e) {
+    const changedRegion = deepCopy(region)
+    Object.assign(changedRegion, calcBBoxRelCoords())
+
+    const detail = {
+      originalEvent: e,
+      region: changedRegion,
+    }
+
+    dispatch("bboxChange", detail)
   }
 
   function joinLabels(region_, delimiter) {
