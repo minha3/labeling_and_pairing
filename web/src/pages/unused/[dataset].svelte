@@ -86,7 +86,6 @@
   <div class="row">
     <div class="col-3">
       <LabelFilter labelStatistics={labels} on:filterChange={onFilterChange}/>
-      <!--      <LabelCheckbox regions={allRegions} callback={getTargetRegions}/>-->
     </div>
     <div class="col-9">
       {#each [...Array(gridRow).keys()] as r}
