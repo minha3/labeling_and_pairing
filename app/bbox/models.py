@@ -21,4 +21,4 @@ class BBox(Base):
 
     @property
     def _columns_exclude_updating(self):
-        return ['id', 'image_id', 'rx1', 'ry1', 'rx2', 'ry2']
+        return ['id', 'image_id']

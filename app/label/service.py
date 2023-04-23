@@ -5,6 +5,7 @@ from sqlalchemy.sql import selectable
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.exceptions import ParameterNotFoundError
+from database.service import get_one as _get_one
 from app.bbox.models import BBox
 from app.image.models import Image
 from app.file.models import File
@@ -30,10 +31,7 @@ async def insert(session: AsyncSession,
 
 
 async def get_one(session: AsyncSession, label_id: int, silent: bool = False) -> Label:
-    r = await session.get(Label, label_id)
-    if r is None and not silent:
-        raise ParameterNotFoundError(f'Label {label_id}')
-    return r
+    return await _get_one(session, Label, label_id, silent)
 
 
 async def update(session: AsyncSession, label: LabelUpdate) -> Label:

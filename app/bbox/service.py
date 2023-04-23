@@ -5,12 +5,12 @@ from sqlalchemy.sql import selectable
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.service import joined_table_names
+from database.service import joined_table_names, get_one as _get_one
 from app.image.models import Image
 from app.label.models import Label
 from app.label.schemas import LabelFilter
 from .models import BBox
-from .schemas import BBoxBase
+from .schemas import BBoxBase, BBoxUpdate
 
 
 async def insert(session: AsyncSession, pairs: List[Tuple[int, BBoxBase]]) -> \
@@ -32,6 +32,18 @@ async def insert(session: AsyncSession, pairs: List[Tuple[int, BBoxBase]]) -> \
             result.append(None)
     await session.commit()
     return result
+
+
+async def get_one(session: AsyncSession, bbox_id: int, silent: bool = False) -> BBox:
+    return await _get_one(session, BBox, bbox_id, silent)
+
+
+async def update(session: AsyncSession, bbox: BBoxUpdate) -> BBox:
+    db_bbox = await get_one(session, bbox.id)
+    db_bbox.update(**bbox.dict(exclude_unset=True))
+    session.add(db_bbox)
+    await session.commit()
+    return db_bbox
 
 
 async def get_all(session: AsyncSession, image_id: int = None, file_id: int = None,

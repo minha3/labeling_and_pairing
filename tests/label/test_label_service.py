@@ -42,7 +42,7 @@ class TestLabelService(unittest.IsolatedAsyncioTestCase):
         r = await get_one(self.session, label_id=label.id)
         self.assertIsNotNone(r)
 
-    async def testget_non_exists(self):
+    async def test_get_non_exists(self):
         with self.assertRaises(ParameterNotFoundError):
             await get_one(self.session, int(1e9))
 

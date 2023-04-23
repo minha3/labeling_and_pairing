@@ -30,3 +30,7 @@ class BBoxPaginated(BaseModel):
     total: int
     page: int
     items_per_page: int
+
+
+class BBoxUpdate(BBoxBase):
+    id: int

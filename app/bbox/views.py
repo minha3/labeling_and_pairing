@@ -2,11 +2,12 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 
+from common.exceptions import ParameterValueError
 from database.core import get_session
 from app.label.schemas import LabelFilter
 from app.label.utils import verify_label_filter, verify_label_sort
-from .schemas import BBoxPaginated
-from .service import get_all_paginated
+from .schemas import BBoxPaginated, BBoxRead, BBoxUpdate
+from .service import get_all_paginated, update
 
 
 router = APIRouter()
@@ -25,3 +26,10 @@ async def get_bboxes(image_id: Optional[int] = None, file_id: Optional[int] = No
     )
     return BBoxPaginated.parse_obj(bboxes)
 
+
+@router.put('/{bbox_id}', response_model=BBoxRead)
+async def update_bbox(bbox_id: int, bbox: BBoxUpdate, session=Depends(get_session)):
+    if bbox_id != bbox.id:
+        raise ParameterValueError(key='id', value=bbox.id, should=bbox_id)
+    bbox = await update(session, bbox)
+    return BBoxRead.from_orm(bbox)

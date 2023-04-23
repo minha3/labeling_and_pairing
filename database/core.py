@@ -1,5 +1,5 @@
 import asyncio
-from typing import AsyncIterable, Optional
+from typing import AsyncIterable, Optional, TypeVar
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine, async_scoped_session
 
@@ -31,6 +31,7 @@ class CustomBase:
 
 
 Base = declarative_base(cls=CustomBase)
+SQLAlchemyModel = TypeVar('SQLAlchemyModel', bound=Base)
 
 
 def create_engine(uri: str = None):

@@ -2,8 +2,9 @@ import unittest
 import os
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.bbox.schemas import BBoxBase
-from app.bbox.service import insert, get_all, get_all_paginated
+from common.exceptions import ParameterNotFoundError
+from app.bbox.schemas import BBoxBase, BBoxUpdate
+from app.bbox.service import insert, get_all, get_all_paginated, get_one, update
 from app.label.schemas import LabelFilter
 
 from ..database import create_database, dispose_database, get_session, remove_session
@@ -102,3 +103,22 @@ class TestBBoxService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(1, r['page'])
         self.assertEqual(1, r['items_per_page'])
         self.assertEqual(1, len(r['items']))
+
+    async def test_get_exists(self):
+        bbox = BBoxFactory()
+
+        r = await get_one(self.session, bbox.id)
+        self.assertIsNotNone(r)
+
+    async def test_get_non_exists(self):
+        with self.assertRaises(ParameterNotFoundError):
+            await get_one(self.session, int(1e9))
+
+    async def test_update(self):
+        bbox = BBoxFactory()
+        bbox_updated = BBoxUpdate(id=bbox.id,
+                                  rx1=bbox.rx1*0.5, rx2=bbox.rx2,
+                                  ry1=bbox.ry1, ry2=bbox.ry2)
+
+        r = await update(self.session, bbox_updated)
+        self.assertEqual(bbox_updated.rx1, r.rx1)

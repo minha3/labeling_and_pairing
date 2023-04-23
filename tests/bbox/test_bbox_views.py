@@ -167,3 +167,25 @@ def test_get_bboxes_from_file_with_pagination():
         assert result['items_per_page'] == items_per_page
         assert len(result['items']) == items_per_page
     remove_data_dir()
+
+
+def test_update_coordinates():
+    with TestClient(app) as client:
+        testsets = asyncio.get_event_loop().run_until_complete(insert_db_data())
+        assert len(testsets) > 0
+        testset = testsets[0]
+
+        bbox = testset['bboxes'][0]
+        attrs_to_update = ['rx1', 'ry1', 'rx2', 'ry2']
+
+        for attr in attrs_to_update:
+            setattr(bbox, attr, getattr(bbox, attr) * 0.5)
+
+        response = client.put(f"/bboxes/{bbox.id}",
+                              json=bbox.dict(),
+                              headers={'Content-Type': 'application/json'})
+
+        assert response.status_code == 200
+        result = response.json()
+        for attr in attrs_to_update:
+            assert getattr(bbox, attr) == result[attr]
