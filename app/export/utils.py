@@ -84,7 +84,7 @@ async def export_to_yolo(dirname: str, bboxes: List[BBox]) -> Optional[str]:
         with open(os.path.join(label_dir, 'annotations.pickle'), 'wb') as f:
             pickle.dump(labels, f)
 
-    with open(os.path.join(root_dir, 'configuration.yml'), 'w') as f:
+    with open(os.path.join(root_dir, 'configuration.yaml'), 'w') as f:
         yaml.safe_dump(config, f)
 
     return root_dir
