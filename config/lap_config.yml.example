@@ -41,3 +41,15 @@ inference:
   host:
   port:
   batch_size: 1
+
+# Enable model registry to get your models from experiment tracking tools
+# When adding a `experiment_tracker` here,
+# make sure to also include a corresponding class
+# that fetches the model list from the model registry server for each tracker.
+# This class should inherit from the ExperimentTrackerApi abstract base class to ensure proper implementation.
+experiment_tracker:
+  comet:
+    cls: CometApi
+    api_key:
+    workspace:
+    project: kfashion

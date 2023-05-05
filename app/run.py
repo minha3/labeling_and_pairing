@@ -14,6 +14,7 @@ from app.image.views import router as image_router
 from app.bbox.views import router as bbox_router
 from app.label.views import router as label_router
 from app.export.views import router as export_router
+from app.model_registry.views import router as model_registry_router
 from app.label.utils import load_labels
 from app.utils import create_directories
 
@@ -65,6 +66,7 @@ app.include_router(image_router, prefix='/images')
 app.include_router(bbox_router, prefix='/bboxes')
 app.include_router(label_router, prefix='/labels')
 app.include_router(export_router, prefix='/exports')
+app.include_router(model_registry_router, prefix='/models')
 
 if __name__ == '__main__':
     uvicorn.run("app.run:app", host=CONFIG['http']['host'], port=CONFIG['http']['port'])
