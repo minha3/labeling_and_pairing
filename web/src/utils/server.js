@@ -102,6 +102,10 @@ class Server extends API {
     export(fileId, filters) {
         return this.POST(`${this.apibase}/exports?file_id=${fileId}${this.join_param({'filters': filters})}`)
     }
+
+    get_models() {
+        return this.GET(`${this.apibase}/models`)
+    }
 }
 
 export default Server
