@@ -41,11 +41,7 @@ def create_engine(uri: str = None):
             uri = '{dialect}+{driver}:///{dbname}'.format(**CONFIG['db'])
         else:
             uri = '{dialect}+{driver}://{user}:{password}@{host}/{dbname}'.format(**CONFIG['db'])
-    engine = create_async_engine(uri,
-                                 encoding='utf-8',
-                                 echo=False,
-                                 future=True
-                                 )
+    engine = create_async_engine(uri, echo=False)
     Session.configure(bind=engine)
 
 

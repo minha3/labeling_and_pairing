@@ -1,6 +1,6 @@
 cryptography
 pyyaml
-sqlalchemy==1.4.45
+sqlalchemy==2.0.12
 pydantic
 aiomysql==0.1.1
 aiosqlite==0.17.0
