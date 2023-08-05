@@ -40,6 +40,8 @@ inference:
   enabled: false
   host:
   port:
+  username:
+  client_key_path:
   batch_size: 1
 
 # Enable model registry to get your models from experiment tracking tools
@@ -49,7 +51,6 @@ inference:
 # This class should inherit from the ExperimentTrackerApi abstract base class to ensure proper implementation.
 experiment_tracker:
   comet:
-    cls: CometApi
     api_key:
     workspace:
     project: kfashion

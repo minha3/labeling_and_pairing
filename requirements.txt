@@ -17,3 +17,4 @@ pytest
 grpcio
 grpcio-tools
 factory-boy
+asyncssh~=2.13.1
