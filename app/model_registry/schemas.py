@@ -3,9 +3,10 @@ from typing import Optional
 from pydantic import BaseModel, validator
 
 
-class ModelBase(BaseModel):
+class AssetBase(BaseModel):
     name: str
     version: str
+    url: str
     created_at: int
     experiment_tracker: str
 
@@ -16,6 +17,7 @@ class ModelBase(BaseModel):
         return value
 
 
-class ModelRead(ModelBase):
+class AssetRead(AssetBase):
     status: Optional[str]
-    download_url: Optional[str]
+    project: Optional[str]
+    model: str

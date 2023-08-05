@@ -18,6 +18,7 @@
   <table class="table">
     <thead class="thead-light">
     <tr>
+      <th scope="col">파일</th>
       <th scope="col">모델</th>
       <th scope="col">버전</th>
       <th scope="col">상태</th>
@@ -29,6 +30,7 @@
     {#each models as model}
       <tr>
         <td>{model.name}</td>
+        <td>{model.model}</td>
         <td>{model.version}</td>
         <td>{model.status}</td>
         <td>{formatDate(model.created_at)}</td>
