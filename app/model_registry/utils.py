@@ -62,7 +62,7 @@ class CometApi(ExperimentTrackerApi):
                 if extension in self._model_extensions:
                     models.append(AssetRead(
                         experiment_tracker='comet',
-                        name=asset['fileName'],
+                        filename=asset['fileName'],
                         version=version['version'],
                         url=(f'https://www.comet.com'
                              f'/api/rest/v2/experiment/asset/get-asset'

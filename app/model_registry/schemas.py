@@ -4,8 +4,7 @@ from pydantic import BaseModel, validator
 
 
 class AssetBase(BaseModel):
-    name: str
-    version: str
+    filename: str
     url: str
     created_at: int
     experiment_tracker: str
@@ -21,3 +20,4 @@ class AssetRead(AssetBase):
     status: Optional[str]
     project: Optional[str]
     model: str
+    version: str

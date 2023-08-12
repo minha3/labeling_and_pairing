@@ -1,6 +1,7 @@
 <script>
   import { url } from '@sveltech/routify';
   import Server from "../../utils/server";
+  import {formatDate} from "../../utils/util";
   const server = new Server()
   let fileInput;
   let fileSelected;
@@ -111,7 +112,7 @@
     {#each fileStats as filestat, i}
       <tr>
         <th scope="row">{filestat.id}</th>
-        <td>{filestat.created_at}</td>
+        <td>{formatDate(filestat.created_at)}</td>
         <td>{filestat.name}</td>
         <td>{filestat.size}</td>
         <td>{filestat.readable_cnt_image}</td>

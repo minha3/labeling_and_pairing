@@ -36,13 +36,17 @@ http:
   port: 8000
 
 # Set inference server connection
-inference:
-  enabled: false
+inference_server:
   host:
-  port:
+  inference_port: 8080
+  management_port: 8081
+  grpc_inference_port: 7070
+  grpc_management_port: 7071
+  number_of_gpu: 0
   username:
   client_key_path:
   batch_size: 1
+  project: kfashion
 
 # Enable model registry to get your models from experiment tracking tools
 # When adding a `experiment_tracker` here,

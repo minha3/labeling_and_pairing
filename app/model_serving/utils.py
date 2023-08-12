@@ -9,6 +9,13 @@ from common.exceptions import ParameterKeyError, OperationError
 CHUNK_SIZE = 1024 * 1024 * 5
 
 
+def serve_cls(model):
+    if model.lower().startswith('yolo'):
+        return YoloServeApi
+    else:
+        return TorchServeApi
+
+
 class SSHClient:
     """
     Example:
@@ -91,14 +98,20 @@ class SSHClient:
 class ServeApi(SSHClient, ABC):
 
     @abstractmethod
-    async def serve(self, name, model, version, serialized_file, port, number_of_gpu):
+    async def serve(self, model, version, serialized_file):
+        pass
+
+    @abstractmethod
+    async def stop(self, model, version):
         pass
 
 
 class TorchServeApi(ServeApi):
     @property
     def required_configs(self):
-        return ['host', 'username', 'client_key_path']
+        return ['host', 'username', 'client_key_path', 'number_of_gpu',
+                'inference_port', 'management_port',
+                'grpc_inference_port', 'grpc_management_port']
 
     def _ts_handler(self, model):
         """
@@ -108,13 +121,12 @@ class TorchServeApi(ServeApi):
         """
         raise NotImplementedError
 
-    async def archive(self, name, model, version, serialized_file):
+    async def archive(self, model, version, serialized_file):
         """
         Reference: https://github.com/pytorch/serve/tree/3a7187cf9b5a405e0a725654790afe24564b03dd/model-archiver#torch-model-archiver-command-line-interface
         Run torch-model-archiver CLI to make a .mar file
-        :param name: A valid project name must begin with a letter of the alphabet
-                        and can only contain letters, digits, underscores `_`, dashes `-` and periods `.`.
-        :param model: Model's name
+        :param model: A valid model name must begin with a letter of the alphabet
+                      and can only contain letters, digits, underscores `_`, dashes `-` and periods `.`.
         :param version: Model's version
         :param serialized_file: A serialized file (.pt or .pth) should be a checkpoint in case of torchscript
                                 and state_dict in case of eager mode.
@@ -125,10 +137,9 @@ class TorchServeApi(ServeApi):
             raise OperationError(f"Failed to archive model on inference server {self._config['host']}."
                                  f"reason=torch-model-archiver is not installed on inference server")
 
-        name = name.lower()
         ts_handler = self._ts_handler(model)
         serialized_dir = os.path.dirname(serialized_file)
-        archive_path = f'{serialized_dir}/{name}.mar'
+        archive_path = f'{serialized_dir}/{model}_{version}.mar'
 
         result = await self._conn.run(f'ls {archive_path}')
         if result.exit_status == 0:
@@ -154,7 +165,8 @@ class TorchServeApi(ServeApi):
         # archive
         result = await self._conn.run(
             f'/usr/local/bin/torch-model-archiver'
-            f' --model-name {name}'
+            f' --force'
+            f' --model-name {model}'
             f' --version {version}'
             f' --serialized-file {serialized_file}'
             f' --handler {handler}'
@@ -165,16 +177,25 @@ class TorchServeApi(ServeApi):
             raise OperationError(f"Failed to archive model on inference server {self._config['host']}."
                                  f"reason={result.stderr}")
 
+        temp_archive_path = f'{serialized_dir}/{model}.mar'
+
+        # append version to archived file
+        if self.path_exists(temp_archive_path):
+            result = await self._conn.run(f'mv {temp_archive_path} {archive_path}')
+            if result.exit_status != 0:
+                print(result.stderr, end='')
+                raise OperationError(f"Failed to archive model on inference server {self._config['host']}."
+                                     f"reason={result.stderr}")
+
         return archive_path
 
-    async def serve(self, name, model, version, serialized_file, port, number_of_gpu):
+    async def serve(self, model, version, serialized_file):
         result = await self._conn.run('command -v torchserve')
         if result.exit_status != 0:
             raise OperationError(f"Failed to serve model on inference server {self._config['host']}."
                                  f"reason=torchserve is not installed on inference server")
 
-        archived = await self.archive(name=name,
-                                      model=model,
+        archived = await self.archive(model=model,
                                       version=version,
                                       serialized_file=serialized_file)
 
@@ -184,8 +205,11 @@ class TorchServeApi(ServeApi):
             content = f.read()
         config_template = Template(content)
         config_content = config_template.substitute(
-            number_of_gpu=number_of_gpu,
-            port=port
+            number_of_gpu=self._config['number_of_gpu'],
+            inference_port=self._config['inference_port'],
+            management_port=self._config['management_port'],
+            grpc_inference_port=self._config['grpc_inference_port'],
+            grpc_management_port=self._config['grpc_management_port'],
         )
         config_path = f'{archived_dir}/torchserve.properties'
         async with self._conn.start_sftp_client() as sftp:
@@ -209,10 +233,17 @@ class TorchServeApi(ServeApi):
             f' --model-store {os.path.dirname(archived)}'
             f' --models {archived}'
             f' --ts-config {config_path}'
-            f' > /dev/null 2>&1 &'
+            f' > {os.path.dirname(archived)}/serve.log 2>&1 &'
         )
         print(result.stdout, end='')
         print(result.stderr, end='')
+
+    async def stop(self, model, version):
+        result = await self._conn.run('torchserve --stop')
+        if result.exit_status != 0:
+            print(result.stderr, end='')
+            raise OperationError(f"Failed to serve model on inference server {self._config['host']}."
+                                 f"reason={result.stderr}")
 
 
 class YoloServeApi(TorchServeApi):
@@ -243,7 +274,4 @@ class YoloServeApi(TorchServeApi):
         return onnx_path
 
     def _ts_handler(self, model):
-        if 'v8' in model.lower():
-            return f'{os.path.dirname(os.path.realpath(__file__))}/yolov8_handler.py'
-        else:
-            raise NotImplementedError
+        return f'{os.path.dirname(os.path.realpath(__file__))}/yolov8_handler.py'

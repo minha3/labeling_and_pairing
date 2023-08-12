@@ -29,7 +29,7 @@
     <tbody>
     {#each models as model}
       <tr>
-        <td>{model.name}</td>
+        <td>{model.filename}</td>
         <td>{model.model}</td>
         <td>{model.version}</td>
         <td>{model.status}</td>
