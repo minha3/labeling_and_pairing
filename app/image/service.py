@@ -9,7 +9,7 @@ from .models import Image
 from .schemas import ImageBase
 
 
-async def get_all(session: AsyncSession, file_id: int) -> List[Optional[Image]]:
+async def get_all(session: AsyncSession, file_id: int) -> List[Image]:
     return [o for o in (await session.scalars(select(Image).where(Image.file_id == file_id)))]
 
 

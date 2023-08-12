@@ -9,7 +9,7 @@ from .models import File
 from .schemas import FileCreate, FileUpdate
 
 
-async def get_all(session: AsyncSession) -> List[Optional[File]]:
+async def get_all(session: AsyncSession) -> List[File]:
     return [o for o in (await session.scalars(select(File)))]
 
 

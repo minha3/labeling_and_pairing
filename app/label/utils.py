@@ -84,7 +84,7 @@ class LabelUtil:
                         return _r
         return r
 
-    def label_names_by_type(self, label_type) -> List[Optional[str]]:
+    def label_names_by_type(self, label_type) -> List[str]:
         if label_type in self._label_types:
             return self._labels[label_type]['labels']
         else:
