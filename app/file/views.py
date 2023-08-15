@@ -3,15 +3,10 @@ import logging
 from typing import List
 from fastapi import APIRouter, Depends, UploadFile, Response
 
-from config import CONFIG
 from common.exceptions import ParameterError
 from database.core import get_session
-from inference import InferenceClient
-from app.image.schemas import ImageRead
-from app.image.service import insert as insert_images, get_all as get_images
-from app.image.utils import get_image_file_path
-from app.bbox.service import insert as insert_bboxes
-from app.label.service import insert as insert_labels
+from app.image.service import insert as insert_images
+from app.model_inference.service import infer as infer_images
 
 from .schemas import FileRead, FileUpdate
 from .service import insert, get_all, get_one, delete, update
@@ -26,7 +21,7 @@ async def create_file(file: UploadFile = Depends(verify_csv_file), session=Depen
     file_info, _ = await save_file(file)
     db_file = await insert(session, file_info)
     if db_file:
-        asyncio.create_task(download_images_from_file(FileRead.from_orm(db_file)))
+        asyncio.create_task(download_and_infer(db_file))
     return db_file
 
 
@@ -49,7 +44,7 @@ async def delete_file(file_id: int, session=Depends(get_session)):
     return Response(status_code=204)
 
 
-async def download_images_from_file(file: FileRead):
+async def download_and_infer(file: FileRead):
     async for session in get_session():
         status, content = await urls_from_file(file.name, silent=True)
         if status:
@@ -91,47 +86,3 @@ async def download_images_from_file(file: FileRead):
             return
 
     asyncio.create_task(infer_images(file))
-
-
-async def infer_images(file: FileRead):
-    inference_client = InferenceClient(config=CONFIG['inference'])
-
-    async for session in get_session():
-        if not inference_client.enabled():
-            file.cnt_region = -1
-            file.error = 'Inference client is disabled'
-        elif await inference_client.ping():
-            db_images = await get_images(session, file.id)
-            inference_images = []
-            for db_image in db_images:
-                image_ = ImageRead.from_orm(db_image)
-                db_image_path = get_image_file_path(image_.hash)
-                inference_images.append((image_, db_image_path))
-
-            result = await inference_client.infer(inference_images)
-
-            try:
-                db_bboxes = await insert_bboxes(session=session, pairs=[(o[0], o[1]) for o in result])
-                file.cnt_bbox = len(db_bboxes)
-            except Exception as e:
-                file.cnt_bbox = -1
-                file.error = 'Failed to insert bboxes'
-                logging.critical(f'Failed to insert bboxes of file {file.id}. reason: {e}')
-            else:
-                try:
-                    await insert_labels(session=session,
-                                        pairs=[(db_bboxes[i].id, result[i][2]) for i in range(len(result))
-                                               if db_bboxes[i] and result[i][2]])
-                except Exception as e:
-                    file.error = 'Failed to insert labels'
-                    logging.critical(f'Failed to insert labels of file {file.id}. reason: {e}')
-        else:
-            file.cnt_region = -1
-            file.error = 'Failed to check the health of inference server'
-
-        try:
-            await update(session, FileUpdate(**file.dict()))
-        except ParameterError as e:
-            logging.critical(f'Failed to update value {file.cnt_region} '
-                             f'to cnt_region column of file "{file.name}". reason: {e}')
-            return
