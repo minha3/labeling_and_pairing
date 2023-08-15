@@ -16,6 +16,8 @@ from app.label.views import router as label_router
 from app.export.views import router as export_router
 from app.model_registry.views import router as model_registry_router
 from app.model_serving.views import router as model_serving_router
+from app.model_registry.service import get_all as get_models
+from app.model_serving.service import serve as serve_model
 from app.label.utils import load_labels
 from app.utils import create_directories
 
@@ -51,6 +53,13 @@ async def startup_event():
     await create_tables(drop=CONFIG.get('clear', False))
     create_directories(drop=CONFIG.get('clear', False))
     load_labels(dir_name=CONFIG['path']['label'])
+    assets = await get_models()
+    if assets:
+        latest_asset = max(assets, key=lambda o: o.version)
+        try:
+            await serve_model(latest_asset)
+        except (OperationError, TimeoutError) as e:
+            print(e)
 
 
 @app.on_event("shutdown")
