@@ -1,4 +1,3 @@
-import asyncio
 import aiofiles
 import grpc
 import json
@@ -57,15 +56,10 @@ class TorchServeClient(InferenceClient):
             if not await self._ping(client):
                 raise OperationError(f"Inference server {self.inference_addr} is not healthy")
 
-            coros = []
-            for image, path in images:
-                coros.append(self._send_request(client, self._config['project'], image, path))
-
             result = []
-            if coros:
-                predictions = await asyncio.gather(*coros)
-                for image, prediction in predictions:
-                    result.extend(self._parse_response(image, prediction))
+            for image, path in images:
+                _, prediction = await self._send_request(client, self._config['project'], image, path)
+                result.extend(self._parse_response(image, prediction))
             return result
 
     @staticmethod
